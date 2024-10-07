@@ -284,7 +284,7 @@ def append_features(data):
 
 
 
-def extract_one_match(df: pd.DataFrame, num_matches=1):
+def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance =1):
     """
     Extracts data for the specified number of matches from the DataFrame.
     A new match is identified by a reset of Time [s] to zero.
@@ -309,12 +309,12 @@ def extract_one_match(df: pd.DataFrame, num_matches=1):
     match_data = df.iloc[match_start_indices[0]:match_start_indices[num_matches]]
 
     # Select every 24th tick but ensure there are no missing ticks in the range
-    if len(match_data) % 240 != 0:
+    if len(match_data) % tick_distance != 0:
         print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of 24.")
-        match_data = match_data.iloc[:-(len(match_data) % 240)]  # Drop the remaining ticks not divisible by 24
+        match_data = match_data.iloc[:-(len(match_data) % tick_distance)]  # Drop the remaining ticks not divisible by 24
     
     # Select every 24th tick
-    match_data = match_data.iloc[::240]
+    match_data = match_data.iloc[::tick_distance]
     # Reset the index
     match_data.reset_index(drop=True, inplace=True)
     # drop the columns that are nan but skip the first row   

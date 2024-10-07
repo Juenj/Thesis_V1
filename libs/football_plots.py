@@ -3,8 +3,8 @@
 # 2. Plots of pitch
 # 3. Graphs for stats
 # 4. Graphs for match durations
-from folders import *
-from data_manipulation import *
+from libs.folders import *
+from libs.data_manipulation import *
 from mplsoccer import Pitch
 import os
 import pandas as pd
