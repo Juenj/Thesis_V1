@@ -9,7 +9,7 @@ class ClusteringObject(ABC):
         self.n_clusters = n_clusters
 
     @abstractmethod
-    def cluster(self):
+    def get_labels(self):
         pass
 
 
@@ -20,6 +20,8 @@ class KMeansObject(ClusteringObject):
         self.KMeans = KMeans(self.n_clusters)
         self.KMeans.fit(self.data)
     
-    def cluster(self):
+    def get_labels(self):
         return self.KMeans.labels_
+    
+
 

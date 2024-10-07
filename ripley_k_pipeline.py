@@ -3,6 +3,7 @@ from libs.data_manipulation import *
 from libs.feature_generation import *
 from libs.dim_reduction import *
 from libs.football_plots import *
+from libs.clustering import *
 from prefect import task, flow
 
 @flow
@@ -15,5 +16,12 @@ def ripleys_k_flow(name : str):
     np_pca = task_wrapper(pca_obj.transform,use_cache=True)(ripleys_k_vals)
     plt.scatter(np_pca[:,0], np_pca[:,1])
     plt.savefig(name + "_ripleysk")
+    clusterer = KMeansObject(np_pca, 5)
+    labels = clusterer.get_labels()
+
+    plt.scatter(np_pca[:,0], np_pca[:,1], labels = labels)
+    plt.savefig(name + "_ripleysk_clustered")
+
+
 
 ripleys_k_flow("Denmark")

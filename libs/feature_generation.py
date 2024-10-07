@@ -77,36 +77,51 @@ def msd_for_dataframe(df, indices, max_time_lag):
 
 
 
+import numpy as np
+import pandas as pd
 
-def ripley_k(points : pd.Series, radii : np.linspace, width : float, height : float):
-    """Ripley's K function for a set of points.
+def ripley_k(points: pd.Series, radii: np.linspace, width: float, height: float):
+    """
+    Ripley's K function for a set of points in a 2D area.
 
     Parameters:
-    points (pd.Series): The points for which to calculate Ripley's K values.
+    points (pd.Series): The points for which to calculate Ripley's K values,
+                        expected format: [x_1, y_1, x_2, y_2, ...].
     radii (np.linspace): The radii for which to calculate Ripley's K values.
     width (float): The width of the area in which the points are located.
     height (float): The height of the area in which the points are located.
 
     Returns:
     list: The Ripley's K values for the points. 
-    
     """
-    n = len(points)
+    
+    # Reshape points from flat Series to array of (x, y) pairs
+    n = len(points) // 2  # Since points come in pairs (x, y)
+    points_array = np.array(points).reshape(n, 2)
+
     area = width * height
     lambda_density = n / area
     k_values = []
 
-    for r in radii: 
+    # Loop through each radius value
+    for r in radii:
         count = 0
+        
+        # Loop through each point and calculate the pairwise distances
         for i in range(n):
             for j in range(n):
                 if i != j:
-                    distance = np.linalg.norm(points.iloc[i] - points.iloc[j])
+                    # Calculate Euclidean distance between point i and point j
+                    distance = np.linalg.norm(points_array[i] - points_array[j])
                     if distance < r:
                         count += 1
+
+        # Calculate Ripley's K for the given radius
         k_r = count / (n * lambda_density)
         k_values.append(k_r)
+
     return k_values
+
 
 
 def ripley_k_by_indices(df, indices):
@@ -122,3 +137,5 @@ def ripley_k_by_indices(df, indices):
     """
     k_vals = np.array([ripley_k(df.filter(regex='^home').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
     return k_vals
+
+#HOME_1_x, 
