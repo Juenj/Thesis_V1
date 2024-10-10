@@ -15,8 +15,8 @@ class ClusteringObject(ABC):
 
 class KMeansObject(ClusteringObject):
     
-    def __init__(self, data: np.ndarray):
-        super().__init__(data)
+    def __init__(self, data: np.ndarray, n_clusters : int):
+        super().__init__(data, n_clusters)
         self.KMeans = KMeans(self.n_clusters)
         self.KMeans.fit(self.data)
     
