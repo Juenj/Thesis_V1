@@ -21,28 +21,29 @@ def calculate_msd(df, window_size):
     np_data = df.to_numpy()
     n = len(df.index)
     # Initialize the MSD array
-    if (window_size > n):
-        return np.array([])
-    # Loop over all time lags
     msds = []
-    #Goes through each column
-    for j in range(0, np_data.shape[1] - 1, 2):
-        msd = np.zeros(window_size)
-        #Changes initial start point
-        for i in range(n-window_size):
-            #Goes through each lag
-            for lag in range(1, window_size):
-                if pd.notna(np_data[i, j]) and pd.notna(np_data[i+lag,j]) and pd.notna(np_data[i, j+1]) and pd.notna(np_data[i+lag,j+1]):
+    if (window_size < n):
+        # Loop over all time lags
+        print("in here")
+        #Goes through each column
+        for j in range(0, np_data.shape[1] - 1, 2):
+            msd = np.zeros(window_size)
+            #Changes initial start point
+            for i in range(n-window_size):
+                #Goes through each lag
+                for lag in range(1, window_size):
+                    if pd.notna(np_data[i, j]) and pd.notna(np_data[i+lag,j]) and pd.notna(np_data[i, j+1]) and pd.notna(np_data[i+lag,j+1]):
 
-                        # Calculate the squared displacement for the current time lag
-                    displacement = (np_data[i, j] - np_data[i+lag,j])**2 + \
-                                       (np_data[i, j+1] - np_data[i+lag,j+1])**2 
+                            # Calculate the squared displacement for the current time lag
+                        displacement = (np_data[i, j] - np_data[i+lag,j])**2 + \
+                                           (np_data[i, j+1] - np_data[i+lag,j+1])**2 
 
-                    msd[lag] += np.mean(displacement)
-        msd = msd/window_size 
-        msds.append(msd)
+                        msd[lag] += np.mean(displacement)
 
-    return np.array(msds)
+            msd = msd/window_size 
+            msds.append(msd)
+    
+        return np.array(msds)
 
 
 def msd_for_dataframe(df, indices, max_time_lag):
@@ -60,10 +61,9 @@ def msd_for_dataframe(df, indices, max_time_lag):
 
     msds = []
     for index in indices:
-        print(index)
-        working_data = df.loc[index:index + max_time_lag].iloc[::12]
+        working_data = df.loc[index:index + max_time_lag]
         if (len(working_data[working_data["half"] == working_data.iloc[0]["half"]]) == len(working_data.index)):
-            msd_data = calculate_msd(working_data)
+            msd_data = calculate_msd(working_data, int(max_time_lag/2))
        
             # Number of particles and time lags
             msds.append(msd_data)

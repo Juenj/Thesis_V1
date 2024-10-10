@@ -283,8 +283,7 @@ def append_features(data):
     return data
 
 
-
-def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance =1):
+def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     """
     Extracts data for the specified number of matches from the DataFrame.
     A new match is identified by a reset of Time [s] to zero.
@@ -308,16 +307,18 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance =1):
     
     match_data = df.iloc[match_start_indices[0]:match_start_indices[num_matches]]
 
-    # Select every 24th tick but ensure there are no missing ticks in the range
+    # Select every tick based on tick_distance
     if len(match_data) % tick_distance != 0:
-        print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of 24.")
-        match_data = match_data.iloc[:-(len(match_data) % tick_distance)]  # Drop the remaining ticks not divisible by 24
+        print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of {tick_distance}.")
+        match_data = match_data.iloc[:-(len(match_data) % tick_distance)]  # Drop the remaining ticks not divisible by tick_distance
     
-    # Select every 24th tick
+    # Select every tick based on tick_distance
     match_data = match_data.iloc[::tick_distance]
-    # Reset the index
-    match_data.reset_index(drop=True, inplace=True)
-    # drop the columns that are nan but skip the first row   
+
+    # Reset the index and assign back to match_data
+    match_data = match_data.reset_index(drop=True)
+
+    # Drop the columns that are NaN but skip the first row   
     match_data = match_data.dropna(axis=1, how='all', subset=match_data.index[1:])
     
     return match_data
