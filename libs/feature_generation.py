@@ -138,4 +138,34 @@ def ripley_k_by_indices(df, indices):
     k_vals = np.array([ripley_k(df.filter(regex='^home|^ball').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
     return k_vals
 
-#HOME_1_x, 
+import numpy as np
+
+def calculate_xy_mean(arr):
+    """
+    Given a NumPy array where columns represent x_0, y_0, x_1, y_1, ..., 
+    this function calculates the mean x and y for each row.
+    
+    Parameters:
+    arr (np.ndarray): Input 2D NumPy array where columns alternate between x and y coordinates.
+
+    Returns:
+    np.ndarray: A 2D NumPy array with two columns (mean_x, mean_y) for each row.
+    """
+    # Check if the number of columns is even (pairs of x, y)
+    if arr.shape[1] % 2 != 0:
+        raise ValueError("Number of columns must be even, representing pairs of x and y coordinates.")
+    
+    # Separate x and y columns: even indices for x, odd indices for y
+    x_values = arr[:, ::2]  # x_0, x_1, x_2, ...
+    y_values = arr[:, 1::2] # y_0, y_1, y_2, ...
+    
+    # Calculate the mean along the x and y columns for each row
+    mean_x = np.nanmean(x_values, axis=1)  # Mean of x for each row
+    mean_y = np.nanmean(y_values, axis=1)  # Mean of y for each row
+    
+    # Stack mean_x and mean_y into a 2D array
+    mean_xy = np.column_stack((mean_x, mean_y))
+    
+    return mean_xy
+
+
