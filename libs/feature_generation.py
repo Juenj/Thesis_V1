@@ -135,7 +135,7 @@ def ripley_k_by_indices(df, indices):
     Returns:
     np.array: The Ripley's K values for the points.
     """
-    k_vals = np.array([ripley_k(df.filter(regex='^home').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
+    k_vals = np.array([ripley_k(df.filter(regex='^home|^ball').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
     return k_vals
 
 #HOME_1_x, 
