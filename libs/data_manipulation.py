@@ -282,15 +282,17 @@ def append_features(data):
     data = generate_ball_xy_delta(data)
     return data
 
-
 def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     """
     Extracts data for the specified number of matches from the DataFrame.
+    Standardizes player positions by reflecting the positions in the second half.
+    
     A new match is identified by a reset of Time [s] to zero.
 
     Parameters:
     df (pd.DataFrame): The DataFrame containing the match data.
     num_matches (int): The number of matches to extract. Defaults to 1.
+    tick_distance (int): The frequency of data ticks to extract. Defaults to 1.
 
     Returns:
     pd.DataFrame: A DataFrame containing data for the specified number of matches.
@@ -312,7 +314,6 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
         print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of {tick_distance}.")
         match_data = match_data.iloc[:-(len(match_data) % tick_distance)]  # Drop the remaining ticks not divisible by tick_distance
     
-    # Select every tick based on tick_distance
     match_data = match_data.iloc[::tick_distance]
 
     # Reset the index and assign back to match_data
@@ -321,4 +322,17 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     # Drop the columns that are NaN but skip the first row   
     match_data = match_data.dropna(axis=1, how='all', subset=match_data.index[1:])
     
+    # Reflect player positions in the second half
+    if 'half' in match_data.columns:  
+        # Determine if we are in the second half ('2H') and reflect the positions
+        second_half = match_data['half'] == '2H'
+        
+        # Define the columns to reflect (positions for both teams and ball positions)
+        # Assuming columns for player positions follow a 'team_player_x' and 'team_player_y' pattern
+        position_columns = [col for col in match_data.columns if ('_x' in col or '_y' in col)]
+
+        # Reflect positions for second half by multiplying x and y coordinates by -1
+        match_data.loc[second_half, position_columns] = match_data.loc[second_half, position_columns] * -1
+
     return match_data
+
