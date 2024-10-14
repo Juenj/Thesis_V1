@@ -2,26 +2,62 @@ import numpy as np
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
 from libs.feature_generation import *
+import pandas as pd
 
 def hull_to_polygon(hull):
-    """Convert a scipy ConvexHull object to a shapely Polygon."""
+    """
+    Convert a scipy ConvexHull object to a shapely Polygon.
+    
+    Parameters:
+    hull (scipy.spatial.ConvexHull): A ConvexHull object.
+
+    Returns:
+    shapely.geometry.Polygon: A Polygon object representing the convex hull.
+
+    """
+
     points = hull.points[hull.vertices]
     return Polygon(points)
 
 def find_centroid(hull):
-    """Find the centroid of a ConvexHull."""
+    """
+    Find the centroid of a ConvexHull.
+    
+    Parameters:
+    hull (scipy.spatial.ConvexHull): A ConvexHull object.
+
+    Returns:
+    numpy.ndarray: The centroid of the ConvexHull.
+    """
     points = hull.points[hull.vertices]
     centroid = np.mean(points, axis=0)
     return centroid
 
 def normalize_hull(hull):
-    """Normalize a ConvexHull by centering it around (0, 0)."""
+    """
+    Normalize a ConvexHull by centering it around (0, 0).
+    
+    Parameters:
+    hull (scipy.spatial.ConvexHull): A ConvexHull object.
+
+    Returns:
+    scipy.spatial.ConvexHull: A normalized ConvexHull object.
+    """
     centroid = find_centroid(hull)
     normalized_points = hull.points - centroid  # Translate points to center around (0, 0)
     return ConvexHull(normalized_points)
 
 def overlapping_area(hull1, hull2):
-    """Compute the overlapping area between two convex hulls."""
+    """
+    Compute the overlapping area between two convex hulls.
+    
+    Parameters:
+    hull1 (scipy.spatial.ConvexHull): The first ConvexHull object.
+    hull2 (scipy.spatial.ConvexHull): The second ConvexHull object.
+    
+    Returns:
+    float: The overlapping area between the two convex hulls.
+    """
     poly1 = hull_to_polygon(hull1)
     poly2 = hull_to_polygon(hull2)
     
@@ -33,7 +69,17 @@ def overlapping_area(hull1, hull2):
     return intersection_over_union
 
 def top_n_similar_hulls(target_hull, hull_list, n=10):
-    """Find the top n hulls with the largest overlapping area with the target hull."""
+    """
+    Find the top n hulls with the largest overlapping area with the target hull.
+    
+    Parameters:
+    target_hull (scipy.spatial.ConvexHull): The target ConvexHull object.
+    hull_list (list): A list of ConvexHull objects to compare against the target hull.
+    n (int): The number of hulls to return (default is 10).
+
+    Returns:
+    list: A list of tuples containing the ConvexHull objects and their overlapping area with the target hull.
+    """
     # Normalize the target hull
     target_hull_normalized = normalize_hull(target_hull)
     
@@ -46,9 +92,6 @@ def top_n_similar_hulls(target_hull, hull_list, n=10):
     # Return the top n hulls
     return areas_sorted[:n]
 
-from scipy.spatial import ConvexHull
-import numpy as np
-import pandas as pd
 
 def convex_hull(df: pd.DataFrame, regex: str, num_players: int = None):
     """
@@ -90,6 +133,16 @@ def convex_hull(df: pd.DataFrame, regex: str, num_players: int = None):
     return hulls
 
 def ripley_k_for_hulls(hulls):
+    """
+    Compute Ripley's K for a list of convex hulls.
+
+    Parameters:
+    hulls (list): A list of ConvexHull objects.
+
+    Returns:
+    list: A list of Ripley's K values for each convex hull.
+    """
+    
     radii = np.arange(0, 34)  # Define radii for Ripley's K
     width = 105.0  # Pitch width
     height = 68.0  # Pitch height
