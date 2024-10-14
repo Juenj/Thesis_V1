@@ -333,6 +333,9 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
 
         # Reflect positions for second half by multiplying x and y coordinates by -1
         match_data.loc[second_half, position_columns] = match_data.loc[second_half, position_columns] * -1
-
+    
+    # keep the Time [s] column
+    match_data = match_data[['Time [s]'] + [col for col in match_data.columns if col != 'Time [s]']]
+    
     return match_data
 
