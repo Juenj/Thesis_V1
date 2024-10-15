@@ -60,6 +60,8 @@ class PCAObject(DimRedObject):
         Returns:
         - np.ndarray - The transformed data in the PCA-reduced space.
         """
+
+        print("here")
         return self.pca.transform(self.scaler.transform(new_data))
     
     def get_components(self):

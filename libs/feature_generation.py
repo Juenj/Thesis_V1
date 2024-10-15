@@ -96,8 +96,11 @@ def ripley_k(points: pd.Series, radii: np.linspace, width: float, height: float)
     """
     
     # Reshape points from flat Series to array of (x, y) pairs
+    points = points.dropna()
     n = len(points) // 2  # Since points come in pairs (x, y)
+    
     points_array = np.array(points).reshape(n, 2)
+  
 
     area = width * height
     lambda_density = n / area
@@ -115,6 +118,7 @@ def ripley_k(points: pd.Series, radii: np.linspace, width: float, height: float)
                     distance = np.linalg.norm(points_array[i] - points_array[j])
                     if distance < r:
                         count += 1
+
 
         # Calculate Ripley's K for the given radius
         k_r = count / (n * lambda_density)

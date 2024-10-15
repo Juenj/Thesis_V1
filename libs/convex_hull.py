@@ -68,7 +68,7 @@ def overlapping_area(hull1, hull2):
     
     return intersection_over_union
 
-def top_n_similar_hulls(target_hull, hull_list, n=10):
+def top_n_similar_hulls(target_hull, hull_list,index_list, n=10):
     """
     Find the top n hulls with the largest overlapping area with the target hull.
     
@@ -84,16 +84,16 @@ def top_n_similar_hulls(target_hull, hull_list, n=10):
     target_hull_normalized = normalize_hull(target_hull)
     
     # Calculate the overlapping area for each normalized hull in the list
-    areas = [(hull, overlapping_area(target_hull_normalized, normalize_hull(hull))) for hull in hull_list]
+    areas = [(hull,index,  overlapping_area(target_hull_normalized, normalize_hull(hull))) for (hull, index) in zip(hull_list,index_list)]
     
     # Sort the hulls by the overlapping area in descending order
-    areas_sorted = sorted(areas, key=lambda x: x[1], reverse=True)
+    areas_sorted = sorted(areas, key=lambda x: x[2], reverse=True)
     
     # Return the top n hulls
     return areas_sorted[:n]
 
 
-def convex_hull(df: pd.DataFrame, regex: str, num_players: int = None):
+def convex_hull(df: pd.DataFrame, regex: str = "^home", num_players: int = None):
     """
     Computes convex hulls for player positions, allowing the selection of a subset of players.
     
@@ -130,7 +130,7 @@ def convex_hull(df: pd.DataFrame, regex: str, num_players: int = None):
         if len(data) >= 3:  # Convex hull requires at least 3 points
             hulls.append(ConvexHull(data))
 
-    return hulls
+    return hulls, df.index.to_numpy()
 
 def ripley_k_for_hulls(hulls):
     """
