@@ -8,6 +8,8 @@ import pandas as pd
 import matplotlib.patches as patches
 
 
+# ImpLememted using the source:
+# https://alphashape.readthedocs.io/en/latest/alphashape.html
 def alpha_shape(df: pd.DataFrame, regex: str = "^home", num_players: int = None, alpha: float = 0.1):
     """
     Computes alpha shapes for player positions, allowing the selection of a subset of players.
@@ -52,6 +54,8 @@ def alpha_shape(df: pd.DataFrame, regex: str = "^home", num_players: int = None,
 
 
 
+# Implemented using the source:
+# https://gudhi.inria.fr/python/latest/alpha_complex_user.html
 # Define a function to extract player positions and apply alpha complex with circles
 def alpha_complex_on_frame(df: pd.DataFrame, regex: str = "^home", frame_idx: int = 0, max_alpha_square=2):
     """
