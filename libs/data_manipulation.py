@@ -37,7 +37,6 @@ def compile_team_tracking_data(base_directory, team_name):
     folders = os.listdir(base_directory)
     # sort folders
     folders = sorted(folders)
-    print(folders)
 
     for folder_name in folders:
         folder_path = os.path.join(base_directory, folder_name)
@@ -63,7 +62,6 @@ def compile_team_tracking_data(base_directory, team_name):
 
                 # Read the CSVs
                 if os.path.exists(team_csv) and os.path.exists(opp_csv):
-                    print(folder_path)
                     team_df = pd.read_csv(team_csv)
                     opp_df = pd.read_csv(opp_csv)
 
