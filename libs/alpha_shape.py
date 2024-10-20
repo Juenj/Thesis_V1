@@ -105,47 +105,32 @@ def alpha_complex_on_frame(df: pd.DataFrame, regex: str = "^home", frame_idx: in
     plt.title(f"Alpha Complex for Frame {frame_idx} with Alpha = sqrt({max_alpha_square})")
     plt.show()
 
-
-def alpha_complex(df: pd.DataFrame, regex: str = "^home", num_players: int = None, max_alpha_square: float = 2):
+def alpha_complex(df, regex="^home", max_alpha_square=2):
     """
     Computes Alpha Complexes for player positions, allowing the selection of a subset of players.
     
     Parameters:
     df (pd.DataFrame): The DataFrame containing player positions.
     regex (str): A regex pattern to filter player positions in the DataFrame.
-    num_players (int): The number of players to include in the alpha complex (optional).
-    max_alpha_square (float): Maximum squared alpha value for the Alpha Complex.
+    max_alpha_square (float): Maximum alpha value for the Alpha Complex.
     
     Returns:
-    list: A list of simplex trees (Alpha Complex structures) for each frame of data.
+    tuple: A tuple containing a list of Alpha Complexes and their indices.
     """
     # Filter columns based on the regex
-    df = df.filter(regex=regex)
-    np_data = df.to_numpy()  # Convert the DataFrame to a NumPy array
-    points = []
-
-    # Process each frame of data to extract player positions
-    for row in np_data:
-        row = row[~np.isnan(row)]  # Remove NaN values (incomplete player positions)
-        player_positions = list(zip(row[0::2], row[1::2]))  # Create (x, y) pairs
-
-        # If num_players is specified, limit the number of players
-        if num_players is not None and len(player_positions) > num_players:
-            # Sort players by their distance to the center of the field (or other criteria)
-            center = np.mean(player_positions, axis=0)  # Calculate the central point (e.g., mean position)
-            player_positions = sorted(player_positions, key=lambda pos: np.linalg.norm(np.array(pos) - center))
-            player_positions = player_positions[:num_players]  # Select the top N closest players
-
-        points.append(player_positions)
-
-    # Compute alpha complexes for each frame
+    df_filtered = df.filter(regex=regex)
+    points_list = df_filtered.to_numpy()  # Convert to numpy
+    
     alpha_complexes = []
-    for data in points:
-        if len(data) >= 3:  # Alpha Complex requires at least 3 points
-            alpha_complex = gd.AlphaComplex(points=np.array(data))
-            simplex_tree = alpha_complex.create_simplex_tree(max_alpha_square=max_alpha_square)
+    for points in points_list:
+        points = points[~np.isnan(points)]  # Remove NaNs
+        player_positions = list(zip(points[0::2], points[1::2]))  # Create (x, y) pairs
+        
+        if len(player_positions) >= 3:  # Alpha Complex requires at least 3 points
+            alpha_complex_obj = gd.AlphaComplex(points=np.array(player_positions))
+            simplex_tree = alpha_complex_obj.create_simplex_tree(max_alpha_square=max_alpha_square)
             alpha_complexes.append(simplex_tree)
-
+    
     return alpha_complexes, df.index.to_numpy()
 
 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
