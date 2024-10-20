@@ -147,3 +147,96 @@ def alpha_complex(df: pd.DataFrame, regex: str = "^home", num_players: int = Non
             alpha_complexes.append(simplex_tree)
 
     return alpha_complexes, df.index.to_numpy()
+
+from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.ops import unary_union
+from shapely.affinity import translate
+
+def normalize_geometry(geometry):
+    """
+    Normalize a geometry (Polygon, MultiPolygon, or GeometryCollection) by
+    translating it such that its centroid is at (0, 0).
+
+    Parameters:
+    - geometry: A geometry object (Polygon, MultiPolygon, or GeometryCollection)
+    
+    Returns:
+    - normalized_geometry: The normalized geometry centered at (0, 0)
+    """
+    # Ensure the geometry is valid and has area
+    if geometry.is_empty or geometry.area == 0:
+        return geometry  # No normalization for empty or zero-area geometries
+    
+    # Calculate the centroid of the geometry
+    centroid = geometry.centroid
+    centroid_x, centroid_y = centroid.x, centroid.y
+    
+    # Translate the geometry so that the centroid moves to (0, 0)
+    normalized_geometry = translate(geometry, xoff=-centroid_x, yoff=-centroid_y)
+    
+    return normalized_geometry
+
+
+
+def intersection_over_union(geom1, geom2):
+    """
+    Compute the Intersection over Union (IoU) for two geometries.
+    
+    Parameters:
+    - geom1: A geometry object (Polygon, MultiPolygon, or GeometryCollection)
+    - geom2: A geometry object (Polygon, MultiPolygon, or GeometryCollection)
+    
+    Returns:
+    - IoU: Intersection over Union value (float)
+    """
+    # Handle GeometryCollections by combining valid geometries with area
+    if isinstance(geom1, GeometryCollection):
+        geom1 = unary_union([g for g in geom1.geoms if g.is_valid and g.area > 0 and isinstance(g, (Polygon, MultiPolygon))])
+    
+    if isinstance(geom2, GeometryCollection):
+        geom2 = unary_union([g for g in geom2.geoms if g.is_valid and g.area > 0 and isinstance(g, (Polygon, MultiPolygon))])
+    
+    # Ensure that both geometries have area (ignore 1D or 0D geometries)
+    if geom1.is_empty or geom2.is_empty or geom1.area == 0 or geom2.area == 0:
+        return 0.0
+    
+    # Compute intersection and union
+    intersection = geom1.intersection(geom2)
+    union = geom1.union(geom2)
+    
+    # Calculate IoU (intersection area over union area)
+    if union.area == 0:  # Avoid division by zero
+        return 0.0
+    
+    iou = intersection.area / union.area
+    return iou
+
+
+def top_n_similar_geometries(target_geometry, geometry_list, index_list, n=10):
+    """
+    Find the top n geometries with the largest overlapping area with the target geometry.
+    
+    Parameters:
+    - target_geometry (Polygon, MultiPolygon, or GeometryCollection): The target geometry object.
+    - geometry_list (list): A list of geometry objects (Polygon, MultiPolygon, or GeometryCollection) to compare against.
+    - index_list (list): A list of indices corresponding to each geometry in geometry_list.
+    - n (int): The number of geometries to return (default is 10).
+    
+    Returns:
+    - list: A list of tuples containing the geometry object, its index, and the overlapping area with the target geometry.
+    """
+    # Normalize the target geometry
+    target_geometry_normalized = normalize_geometry(target_geometry)
+    
+    # Calculate the overlapping area for each normalized geometry in the list
+    areas = []
+    for geometry, index in zip(geometry_list, index_list):
+        normalized_geometry = normalize_geometry(geometry)
+        overlapping_area_value = intersection_over_union(target_geometry_normalized, normalized_geometry)
+        areas.append((geometry, index, overlapping_area_value))
+    
+    # Sort the geometries by the overlapping area in descending order
+    areas_sorted = sorted(areas, key=lambda x: x[2], reverse=True)
+    
+    # Return the top n geometries
+    return areas_sorted[:n]
