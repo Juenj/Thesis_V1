@@ -4,6 +4,39 @@ import pandas as pd
 
 
 
+
+def calculate_msd_for_team(df : pd.DataFrame):
+    df = df.filter(regex = "^home")
+    n_rows = len(df.index)
+    data_np = df.to_numpy()
+    msds = np.zeros(n_rows)
+    for j in range(0,len(data_np[0]),2):
+        point_initial = (data_np[0,j],data_np[0,j+1])
+        for i in range(len(data_np)):
+            if (pd.notna(data_np[i,j]) and pd.notna(data_np[0,j])):
+                msds[i] += (point_initial[0] - data_np[i,j])**2 + (point_initial[1] - data_np[i,j+1])**2
+    return msds/11
+            
+
+
+def team_msd_for_dataframe(df, indices, max_time_lag):
+    msds = []
+    for index in indices:
+        working_data = df.loc[index:index + max_time_lag]
+        print(working_data.head())
+        if(len(working_data) >= max_time_lag):
+            if (len(working_data[working_data["half"] == working_data.iloc[0]["half"]]) == len(working_data.index)):
+                msd_data = calculate_msd_for_team(working_data)
+
+                # Number of particles and time lags
+                msds.append(msd_data)
+      
+    
+    msds_stacked = np.vstack(msds)
+    
+    return msds_stacked
+
+
 def calculate_msd(df, window_size):
     """
     Calculate the mean squared displacement for a set of points.
@@ -24,7 +57,6 @@ def calculate_msd(df, window_size):
     msds = []
     if (window_size < n):
         # Loop over all time lags
-        print("in here")
         #Goes through each column
         for j in range(0, np_data.shape[1] - 1, 2):
             msd = np.zeros(window_size)
@@ -79,6 +111,60 @@ def msd_for_dataframe(df, indices, max_time_lag):
 
 import numpy as np
 import pandas as pd
+
+
+def ripley_k_multiclass(points_1: pd.Series,points_2: pd.Series, radii: np.linspace, width: float, height: float):
+    
+    # Reshape points from flat Series to array of (x, y) pairs
+    points_1 = points_1.dropna()
+    n_1 = len(points_1) // 2  # Since points come in pairs (x, y)
+    points_array_1 = np.array(points_1).reshape(n_1, 2)
+
+    points_2 = points_2.dropna()
+    n_2 = len(points_2) // 2  # Since points come in pairs (x, y)
+    points_array_2 = np.array(points_2).reshape(n_2, 2)
+  
+  
+
+    area = width * height
+    lambda_density = n_2 / area
+    k_values = []
+
+    # Loop through each radius value
+    for r in radii:
+        count = 0
+        
+        # Loop through each point and calculate the pairwise distances
+        for i in range(n_1):
+            for j in range(n_2):
+                if i != j:
+                    # Calculate Euclidean distance between point i and point j
+                    distance = np.linalg.norm(points_array_1[i] - points_array_2[j])
+                    if distance < r:
+                        count += 1
+
+
+        # Calculate Ripley's K for the given radius
+        k_r = count / (n_2 * lambda_density)
+        k_values.append(k_r)
+
+    return k_values
+
+
+def ripley_k_multiclass_by_indices(df, indices):
+    """
+    Calculate Ripley's K values for a set of points.
+    
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the points.
+    indices (list): The indices of the rows in the DataFrame.
+
+    Returns:
+    np.array: The Ripley's K values for the points.
+    """
+    k_vals = np.array([ripley_k_multiclass(df.filter(regex='^home').loc[i],df.filter(regex='^away').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
+    return k_vals
+
 
 def ripley_k(points: pd.Series, radii: np.linspace, width: float, height: float):
     """

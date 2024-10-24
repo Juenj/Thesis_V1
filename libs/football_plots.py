@@ -288,6 +288,7 @@ def generate_pitches_from_start_indices(indices: list, src_df : pd.DataFrame, de
     Returns:
     None
     """
+    
     clear_folder(dest)
     for value in indices:
         generate_pitch_with_vectors( src_df.loc[value:value+n_ticks:step], dest+"/ball_stoppage_index_"+str(value)+".png")
