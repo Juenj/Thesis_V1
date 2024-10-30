@@ -16,7 +16,7 @@ import os
 
 
 # Function to calculate weights based on proximity to the ball and ensure they sum to exactly 1
-def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home", function : function = lambda x : x):
+def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home", fun = lambda x : x):
     ball_x = df[ball_x_col].values
     ball_y = df[ball_y_col].values
     player_cols = df.filter(regex=regex).columns
@@ -25,12 +25,14 @@ def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y'
     weights_list = []
     x_cols = [col for col in player_cols if col.endswith('_x')]
     y_cols = [col for col in player_cols if col.endswith('_y')]
-    
+    indices = df.index.to_numpy()
+    print(x_cols)
+    print(y_cols)
     for frame_idx in range(len(df)):
         weights = []
         for i in range(len(x_cols)):  # Loop through all players
-            player_x = df.loc[frame_idx, x_cols[i]]
-            player_y = df.loc[frame_idx, y_cols[i]]
+            player_x = df.loc[indices[frame_idx], x_cols[i]]
+            player_y = df.loc[indices[frame_idx], y_cols[i]]
             
             # Check if player_x or player_y is NaN (inactive player)
             if np.isnan(player_x) or np.isnan(player_y):
@@ -38,7 +40,7 @@ def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y'
             
             # Calculate the distance to the ball
             distance_to_ball = np.sqrt((player_x - ball_x[frame_idx])**2 + (player_y - ball_y[frame_idx])**2)
-            weight = function(distance_to_ball) #Custom function
+            weight = fun(distance_to_ball) #Custom function
             weights.append(weight)
         
         # Normalize weights to sum to 1
@@ -51,7 +53,7 @@ def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y'
         if weights.size > 0:
             weights[-1] += 1 - np.sum(weights)
         
-        weights_list.append(weights)
+        weights_list.append(weights.tolist())
     
     return weights_list  # Return a list of arrays with normalized weights
 
