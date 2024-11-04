@@ -295,7 +295,8 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     tick_distance (int): The frequency of data ticks to extract. Defaults to 1.
 
     Returns:
-    pd.DataFrame: A DataFrame containing data for the specified number of matches.
+    pd.DataFrame: A DataFrame containing data for the specified number of matches,
+                  with an added 'match_id' column indicating the match number.
     """
     
     # Identify indices where Time [s] resets to zero
@@ -307,35 +308,44 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
         print(f"Warning: Only {len(match_start_indices) - 1} matches are available. Returning all matches.")
         num_matches = len(match_start_indices) - 1
     
-    match_data = df.iloc[match_start_indices[0]:match_start_indices[num_matches]]
-
-    # Select every tick based on tick_distance
-    if len(match_data) % tick_distance != 0:
-        print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of {tick_distance}.")
-        match_data = match_data.iloc[:-(len(match_data) % tick_distance)]  # Drop the remaining ticks not divisible by tick_distance
+    extracted_data = []
     
-    match_data = match_data.iloc[::tick_distance]
-
-    # Reset the index and assign back to match_data
-    match_data = match_data.reset_index(drop=True)
-
-    # Drop the columns that are NaN but skip the first row   
-    match_data = match_data.dropna(axis=1, how='all', subset=match_data.index[1:])
-    
-    # Reflect player positions in the second half
-    if 'half' in match_data.columns:  
-        # Determine if we are in the second half ('2H') and reflect the positions
-        second_half = match_data['half'] == '2H'
+    # Loop through each match to extract and assign a match ID
+    for match_id in range(num_matches):
+        match_data = df.iloc[match_start_indices[match_id]:match_start_indices[match_id + 1]]
         
-        # Define the columns to reflect (positions for both teams and ball positions)
-        # Assuming columns for player positions follow a 'team_player_x' and 'team_player_y' pattern
-        position_columns = [col for col in match_data.columns if ('_x' in col or '_y' in col)]
+        # Select every tick based on tick_distance
+        if len(match_data) % tick_distance != 0:
+            print(f"Warning: Missing some ticks, only selecting up to the nearest multiple of {tick_distance}.")
+            match_data = match_data.iloc[:-(len(match_data) % tick_distance)]
+        
+        match_data = match_data.iloc[::tick_distance]
+        
+        # Add match_id column
+        match_data['match_id'] = match_id + 1  # Match ID starts at 1
+        
+        # Reflect player positions in the second half
+        if 'half' in match_data.columns:
+            # Determine if we are in the second half ('2H') and reflect the positions
+            second_half = match_data['half'] == '2H'
+            
+            # Define the columns to reflect (positions for both teams and ball positions)
+            position_columns = [col for col in match_data.columns if ('_x' in col or '_y' in col)]
 
-        # Reflect positions for second half by multiplying x and y coordinates by -1
-        match_data.loc[second_half, position_columns] = match_data.loc[second_half, position_columns] * -1
+            # Reflect positions for second half by multiplying x and y coordinates by -1
+            match_data.loc[second_half, position_columns] = match_data.loc[second_half, position_columns] * -1
+        
+        extracted_data.append(match_data)
+    
+    # Concatenate all extracted match data
+    final_data = pd.concat(extracted_data, ignore_index=True)
+    
+    # Drop the columns that are NaN but skip the first row   
+    final_data = final_data.dropna(axis=1, how='all', subset=final_data.index[1:])
     
     # keep the Time [s] column
-    match_data = match_data[['Time [s]'] + [col for col in match_data.columns if col != 'Time [s]']]
+    final_data = final_data[['match_id', 'Time [s]'] + [col for col in final_data.columns if col not in ['match_id', 'Time [s]']]]
     
-    return match_data
+    return final_data
+
 
