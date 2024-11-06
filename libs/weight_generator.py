@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 
-def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home", fun=lambda x: x, epsilon=1e-6):
+def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home", fun=lambda x: x, max_val =1):
     ball_x = df[ball_x_col].values
     ball_y = df[ball_y_col].values
     player_cols = df.filter(regex=regex).columns
@@ -24,7 +24,6 @@ def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y'
     x_cols = [col for col in player_cols if col.endswith('_x')]
     y_cols = [col for col in player_cols if col.endswith('_y')]
     indices = df.index.to_numpy()
-
     for frame_idx in range(len(df)):
         weights = []
         for i in range(len(x_cols)):  # Loop through all players
@@ -35,37 +34,17 @@ def calculate_weights(df: pd.DataFrame, ball_x_col='ball_x', ball_y_col='ball_y'
             if np.isnan(player_x) or np.isnan(player_y):
                 continue  # Skip this player if they are inactive
             
-            #SOMETHING WRONG HERE
+           
             # Calculate the distance to the ball and ensure a small epsilon is added
             distance_to_ball = np.sqrt((player_x - ball_x[frame_idx])**2 + (player_y - ball_y[frame_idx])**2)
           
             weight = fun(distance_to_ball)  # Add epsilon to ensure positivity
-            weights.append(weight)
-        # Convert weights to a numpy array
-        #THINK OF OTHER WAY TO DO THIS! TALK TO JON
-        #weights = np.array(weights)
-        #
-        ## Shift weights so that the smallest weight is 0
-        #min_weight = np.min(weights)
-        #weights = weights - min_weight
-        #
-        ## Scale weights to the range [0, 1] by dividing by the new max
-        #max_weight = np.max(weights)
-        #if max_weight > 0:
-        #    weights = weights / max_weight
-        #
-        ## Normalize weights to sum to 1
-        #weights_sum = np.sum(weights)
-        #if weights_sum > 0:
-        #    weights = weights / weights_sum
-        #
-        ## Correct the last weight to ensure exact sum of 1
-        #if weights.size > 0:
-        #    weights[-1] += 1 - np.sum(weights)
-        #
-        #weights = np.abs(weights)
-        #weights_list.append(weights.tolist())
-    
+            
+            weights.append(np.min([weight, max_val])/normalizing_factor)
+        weights.append(1-np.sum(weights)) #Adding final weight for ball
+        weights_list.append(weights)
+
+  
     return weights_list  # Return a list of arrays with normalized weights
 
 
@@ -91,17 +70,37 @@ def normalize_positions_with_ball(df):
     
     return df_normalized
 
-def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_function, steps = 48):
-    print(relevant_index)
+def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_function, steps = 48, normalizing_factor = 11, max_weight = 1):
     one_match = relevant_df
     identified_corner_df= relevant_df.iloc[relevant_index:relevant_index+1]
     one_match = one_match.iloc[::steps]
     #####
-    inverse_identified_corner_weights = calculate_weights(identified_corner_df, fun = weighting_function)
-    inverse_distance_list = calculate_weights(one_match, fun= weighting_function) #Inverse proportionality to distance
-    one_match = normalize_positions_with_ball(one_match)
-    coordinates_numpy = one_match.filter(regex ="^home").to_numpy()
-    identified_corner_coordinates_numpy = identified_corner_df.filter(regex ="^home").to_numpy()
+    inverse_identified_corner_weights = calculate_weights(identified_corner_df,normalizing_factor, fun = weighting_function, max_val=max_weight)
+    inverse_distance_list = calculate_weights(one_match,normalizing_factor, fun= weighting_function, max_val=max_weight) #Inverse proportionality to distance
+    #one_match = normalize_positions_with_ball(one_match)
+
+    # Filter the columns, then reorder so 'ball_x_team' and 'ball_y_team' are last
+    columns_to_select = one_match.filter(regex="^home|ball_x_team|ball_y_team").columns
+    # Separate ball_x_team and ball_y_team columns and place them at the end
+    reordered_columns = [col for col in columns_to_select if not col.startswith("ball")] + \
+                        [col for col in columns_to_select if col.startswith("ball")]
+    
+
+    # Apply the reordered columns to the DataFrame, then convert to numpy
+    coordinates_numpy = one_match[reordered_columns].to_numpy()
+    
+    print(one_match[reordered_columns].head())
+
+
+    # Repeat the same process for identified_corner_df
+    columns_to_select_identified = identified_corner_df.filter(regex="^home|ball_x_team|ball_y_team").columns
+    reordered_columns_identified = [col for col in columns_to_select_identified if not col.startswith("ball")] + \
+                                   [col for col in columns_to_select_identified if col.startswith("ball")]
+    
+    print(identified_corner_df[reordered_columns_identified])
+    print(inverse_identified_corner_weights[0])
+    identified_corner_coordinates_numpy = identified_corner_df[reordered_columns_identified].to_numpy()
+
     #####
 
     
@@ -110,13 +109,15 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     
     #Get closest situations
     distances = []
-
+    indices = one_match.index.to_numpy()
     i = 0
     for weights, coordinates in zip(inverse_distance_list, coordinates_zipped):
+        
+        if(not np.isnan(np.sum(weights)) and (len(weights) == len(inverse_identified_corner_weights[0])) and (len(coordinates) == len(identified_corner_coordinates[0]) )):
+            
+            
+            distances.append((wasserstein_distance_nd(identified_corner_coordinates[0], coordinates, u_weights= inverse_identified_corner_weights[0], v_weights=weights), indices[i]))
         i+=1
-
-        if(not np.isnan(np.sum(weights)) and len(weights) == 11 and len( coordinates) == 11):
-            distances.append((wasserstein_distance_nd(identified_corner_coordinates[0], coordinates, u_weights= inverse_identified_corner_weights[0], v_weights=weights), i))
     indices_and_distances = sorted(distances, key = lambda t: t[0])
     indices = [index for _,index in indices_and_distances]
     return indices
