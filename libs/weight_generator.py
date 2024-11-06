@@ -39,7 +39,8 @@ def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='bal
             distance_to_ball = np.sqrt((player_x - ball_x[frame_idx])**2 + (player_y - ball_y[frame_idx])**2)
           
             weight = fun(distance_to_ball)  # Add epsilon to ensure positivity
-            
+            if (weight > 190):
+                print(weight)
             weights.append(np.min([weight, max_val])/normalizing_factor)
         weights.append(1-np.sum(weights)) #Adding final weight for ball
         weights_list.append(weights)
