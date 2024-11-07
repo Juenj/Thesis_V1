@@ -122,3 +122,19 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     indices_and_distances = sorted(distances, key = lambda t: t[0])
     indices = [index for _,index in indices_and_distances]
     return indices
+
+
+
+
+def filter_by_ball_radius(data, index, radius):
+    # Get the ball position at the specified index
+    ref_ball_x = data.at[index, 'ball_x_team']
+    ref_ball_y = data.at[index, 'ball_y_team']
+    
+    # Calculate the distance of each row's ball position from the reference position
+    distances = np.sqrt((data['ball_x_team'] - ref_ball_x)**2 + (data['ball_y_team'] - ref_ball_y)**2)
+    
+    # Filter rows where the distance is less than or equal to the radius
+    filtered_data = data[distances <= radius]
+    
+    return filtered_data
