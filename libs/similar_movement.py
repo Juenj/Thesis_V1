@@ -1,5 +1,6 @@
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean 
+
 def find_similar_movement(df, index_of_target_movement, indices_of_candidate_sequeces, length_of_sequence=120, columns=["ball_x", "ball_y"]):
     """
     Finds and ranks sequences in a DataFrame based on similarity to a target sequence.

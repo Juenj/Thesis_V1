@@ -228,6 +228,8 @@ def ripley_k_by_indices(df, indices):
     k_vals = np.array([ripley_k(df.filter(regex='^home').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
     return k_vals
 
+
+
 import numpy as np
 
 def calculate_xy_mean(arr):

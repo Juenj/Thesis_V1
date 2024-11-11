@@ -72,14 +72,15 @@ class InteractivePitch:
                 "function_3": lambda x: np.exp(-x / 40)
             }[selected_function]
             
-            # Prepare clicked row from the last saved situation
-            clicked_situation = self.situations[-1]  # Use the most recently saved situation
+            # Prepare clicked row from the picked saved situation
+            clicked_situation = self.situations[self.situation_dropdown.value]
             clicked_row = self._situation_to_row(clicked_situation)
-            
+            print(clicked_row)
             # Calculate Wasserstein distances
-            indices = most_similar_with_wasserstein_from_row(clicked_row, self.match_data, weighting_function)
+            #indices = most_similar_with_wasserstein_from_row(clicked_row, self.match_data, weighting_function)
+            indices = most_similar_with_wasserstein(self.situation_dropdown.value, self.match_data, weighting_function)
             print("Wasserstein calculated, closest situations:", indices[:10])  # Display the top 10 closest situations
-
+            
     def _situation_to_row(self, situation):
         """Convert a saved situation (points and ball position) to a 1D row format compatible with the DataFrame."""
         row = {}
@@ -90,6 +91,7 @@ class InteractivePitch:
             row['ball_x_team'] = situation['ball'][0]
             row['ball_y_team'] = situation['ball'][1]
         return row
+
     
     def _initialize_players(self, match_data):
         """Initialize home and away player lists from match data."""

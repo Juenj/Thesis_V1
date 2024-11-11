@@ -124,6 +124,55 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     return indices
 
 
+def most_similar_with_wasserstein_from_row(clicked_row, relevant_df, weighting_function, steps=48, normalizing_factor=11, max_weight=1):
+    """
+    Find the most similar situations to a given clicked row using Wasserstein distance.
+    
+    Parameters:
+    - clicked_row: A dictionary representing a specific situation with player positions and ball position.
+    - relevant_df: DataFrame containing situations to compare against.
+    - weighting_function: Function to calculate weights.
+    - steps: Step size for downsampling the relevant_df DataFrame.
+    - normalizing_factor: Normalizing factor for the weighting function.
+    - max_weight: Maximum weight for the weighting function.
+    
+    Returns:
+    - indices: List of indices in `relevant_df` sorted by similarity to the clicked situation.
+    """
+    one_match = relevant_df.iloc[::steps]  # Downsample relevant_df
+    clicked_df = pd.DataFrame([clicked_row], columns=relevant_df.columns)  # Convert clicked row to DataFrame
+
+    # Calculate weights for clicked situation and for each row in one_match
+    clicked_weights = calculate_weights(clicked_df, normalizing_factor, fun=weighting_function, max_val=max_weight)
+    one_match_weights = calculate_weights(one_match, normalizing_factor, fun=weighting_function, max_val=max_weight)
+
+    # Prepare and reorder columns for comparison
+    columns_to_select = one_match.filter(regex="^home|ball_x_team|ball_y_team").columns
+    reordered_columns = [col for col in columns_to_select if not col.startswith("ball")] + \
+                        [col for col in columns_to_select if col.startswith("ball")]
+    
+    coordinates_numpy = one_match[reordered_columns].to_numpy()
+    clicked_coordinates_numpy = clicked_df[reordered_columns].to_numpy()
+
+    # Convert coordinates to zipped format
+    clicked_coordinates = [list(zip(row[~np.isnan(row)][::2], row[~np.isnan(row)][1::2])) for row in clicked_coordinates_numpy]
+    coordinates_zipped = [list(zip(row[~np.isnan(row)][::2], row[~np.isnan(row)][1::2])) for row in coordinates_numpy]
+
+    # Calculate Wasserstein distances between clicked situation and each row in one_match
+    distances = []
+    indices = one_match.index.to_numpy()
+    i = 0
+    for weights, coordinates in zip(one_match_weights, coordinates_zipped):
+        if not np.isnan(np.sum(weights)) and (len(weights) == len(clicked_weights[0])) and (len(coordinates) == len(clicked_coordinates[0])):
+            distance = wasserstein_distance_nd(clicked_coordinates[0], coordinates, u_weights=clicked_weights[0], v_weights=weights)
+            distances.append((distance, indices[i]))
+        i += 1
+
+    # Sort by distances and extract indices
+    indices_and_distances = sorted(distances, key=lambda t: t[0])
+    indices = [index for _, index in indices_and_distances]
+    
+    return indices
 
 
 def filter_by_ball_radius(data, index, radius):
