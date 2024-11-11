@@ -20,6 +20,7 @@ class InteractivePitch:
         self.points = []
         self.vectors = []
         self.situations = []
+        self.similar_situation_indices = []
         self.ball_position = None
         
         # Mode flags
@@ -78,8 +79,14 @@ class InteractivePitch:
             print(clicked_row)
             # Calculate Wasserstein distances
             #indices = most_similar_with_wasserstein_from_row(clicked_row, self.match_data, weighting_function)
-            indices = most_similar_with_wasserstein(self.situation_dropdown.value, self.match_data, weighting_function)
+            relevant_data = self.match_data
+            if (self.ball_position):
+                relevant_data = filter_by_ball_radius(self.match_data,self.ball_position[0],self.ball_position[1],5)
+
+
+            indices = most_similar_with_wasserstein(self.situation_dropdown.value, relevant_data, weighting_function)
             print("Wasserstein calculated, closest situations:", indices[:10])  # Display the top 10 closest situations
+            self.similar_situation_indices = indices
             
     def _situation_to_row(self, situation):
         """Convert a saved situation (points and ball position) to a 1D row format compatible with the DataFrame."""

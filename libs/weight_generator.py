@@ -71,6 +71,21 @@ def normalize_positions_with_ball(df):
     
     return df_normalized
 
+
+def filter_by_ball_radius(data, index, radius):
+    # Get the ball position at the specified index
+    ref_ball_x = data.at[index, 'ball_x_team']
+    ref_ball_y = data.at[index, 'ball_y_team']
+    
+    # Calculate the distance of each row's ball position from the reference position
+    distances = np.sqrt((data['ball_x_team'] - ref_ball_x)**2 + (data['ball_y_team'] - ref_ball_y)**2)
+    
+    # Filter rows where the distance is less than or equal to the radius
+    filtered_data = data[distances <= radius]
+    
+    return filtered_data
+
+
 def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_function, steps = 48, normalizing_factor = 11, max_weight = 1):
     one_match = relevant_df
     identified_corner_df= relevant_df.iloc[relevant_index:relevant_index+1]
@@ -175,11 +190,9 @@ def most_similar_with_wasserstein_from_row(clicked_row, relevant_df, weighting_f
     return indices
 
 
-def filter_by_ball_radius(data, index, radius):
-    # Get the ball position at the specified index
-    ref_ball_x = data.at[index, 'ball_x_team']
-    ref_ball_y = data.at[index, 'ball_y_team']
-    
+def filter_by_ball_radius(data, ball_x, ball_y, radius):
+    ref_ball_x = ball_x
+    ref_ball_y = ball_y    
     # Calculate the distance of each row's ball position from the reference position
     distances = np.sqrt((data['ball_x_team'] - ref_ball_x)**2 + (data['ball_y_team'] - ref_ball_y)**2)
     

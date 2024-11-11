@@ -292,3 +292,72 @@ def generate_pitches_from_start_indices(indices: list, src_df : pd.DataFrame, de
     clear_folder(dest)
     for value in indices:
         generate_pitch_with_vectors( src_df.loc[value:value+n_ticks:step], dest+"/ball_stoppage_index_"+str(value)+".png")
+
+import matplotlib.pyplot as plt
+from mplsoccer import Pitch
+import pandas as pd
+import numpy as np
+
+def display_pitches_with_ball_movement(df_processed: pd.DataFrame, indices: list):
+    """
+    Display a grid of pitch plots with player positions and ball movement for the next 96 ticks for specified indices.
+
+    Parameters:
+    df_processed (pd.DataFrame): The processed DataFrame containing player and ball positions.
+    indices (list): List of indices in the DataFrame to plot.
+
+    Returns:
+    None
+    """
+    # Set up the subplot layout
+    num_pitches = len(indices)
+    rows = (num_pitches + 1) // 2  # 2 pitches per row
+    fig, axs = plt.subplots(rows, 2, figsize=(16, rows * 8))  # Adjust height as needed
+    axs = axs.flatten()  # Flatten in case of odd number of pitches
+
+    # Loop through each index and plot a pitch
+    for idx, i in enumerate(indices):
+        ax = axs[idx]
+        
+        # Extract the data for the specific index
+        df_ball_start = df_processed.loc[i, ["ball_x", "ball_y"]]
+        half = str(df_processed.loc[i, 'half'])
+        df_current = df_processed.filter(regex='^home').loc[i]
+        
+        # Set up the pitch
+        pitch = Pitch(pitch_type='skillcorner', pitch_length=105, pitch_width=68, axis=True, label=True, line_color="white", pitch_color="grass")
+        pitch.draw(ax=ax)
+        
+        # Extract player positions
+        np_data = df_current.to_numpy().reshape(-1, 2)  # Reshape to get (x, y) pairs
+        player_colors = plt.cm.viridis(np.linspace(0, 1, np_data.shape[0]))  # Color map for players
+        
+        # Plot player positions (static)
+        for j, (x, y) in enumerate(np_data):
+            if pd.notna(x) and pd.notna(y):
+                ax.scatter(x, y, color=player_colors[j], edgecolors='black', s=100, alpha=0.7, label=f'Player {j + 1}')
+        
+        # Plot ball position over the next 96 ticks (or until the end of the data if fewer than 96 rows are left)
+        end_idx = min(i + 96, len(df_processed))
+        df_ball_movement = df_processed.loc[i:end_idx, ["ball_x", "ball_y"]]
+        
+        # Initial ball position (highlighted)
+        ax.scatter(df_ball_start["ball_x"], df_ball_start["ball_y"], s=120, color='blue', edgecolors='red', linewidth=2, label='Ball_start')
+        
+        # Plot ball trail to show movement
+        for j in range(1, len(df_ball_movement)):
+            x = df_ball_movement.iloc[j]["ball_x"]
+            y = df_ball_movement.iloc[j]["ball_y"]
+            if pd.notna(x) and pd.notna(y):
+                ax.scatter(x, y, s=100, color='yellow', edgecolors='red', alpha=(j / len(df_ball_movement)), label='Ball' if j == 1 else "")
+
+        # Title and legend
+        ax.set_title(f"Half: {half}, Time [s]: {df_processed['Time [s]'].iloc[i]}")
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=4)
+
+    # Hide unused subplots if the number of pitches is odd
+    for j in range(num_pitches, rows * 2):
+        fig.delaxes(axs[j])
+
+    plt.tight_layout()
+    plt.show()
