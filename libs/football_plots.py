@@ -361,3 +361,87 @@ def display_pitches_with_ball_movement(df_processed: pd.DataFrame, indices: list
 
     plt.tight_layout()
     plt.show()
+
+
+import matplotlib.pyplot as plt
+from mplsoccer import Pitch
+import pandas as pd
+import numpy as np
+import ipywidgets as widgets
+from IPython.display import display, clear_output
+
+def display_interactive_pitch(df_processed: pd.DataFrame, indices: list):
+    """
+    Display interactive pitch plots with a dropdown menu to select index and update the plot.
+
+    Parameters:
+    df_processed (pd.DataFrame): The processed DataFrame containing player and ball positions.
+    indices (list): List of indices in the DataFrame to plot.
+
+    Returns:
+    None
+    """
+    # Dropdown widget for index selection
+    dropdown = widgets.Dropdown(
+        options=indices,
+        description='Select Index:',
+        value=indices[0]
+    )
+    
+    # Output widget to display the pitch
+    output = widgets.Output()
+    
+    # Function to update pitch based on selected index
+    def update_pitch(index):
+        with output:
+            clear_output(wait=True)
+            fig, ax = plt.subplots(figsize=(8, 6))
+
+            # Extract data for selected index
+            df_ball_start = df_processed.loc[index, ["ball_x", "ball_y"]]
+            half = str(df_processed.loc[index, 'half'])
+            df_current = df_processed.filter(regex='^home').loc[index]
+            
+            # Set up the pitch
+            pitch = Pitch(pitch_type='skillcorner', pitch_length=105, pitch_width=68, axis=True, label=True, line_color="white", pitch_color="grass")
+            pitch.draw(ax=ax)
+            
+            # Extract player positions
+            np_data = df_current.to_numpy().reshape(-1, 2)  # Reshape to get (x, y) pairs
+            player_colors = plt.cm.viridis(np.linspace(0, 1, np_data.shape[0]))  # Color map for players
+            
+            # Plot player positions (static)
+            for j, (x, y) in enumerate(np_data):
+                if pd.notna(x) and pd.notna(y):
+                    ax.scatter(x, y, color=player_colors[j], edgecolors='black', s=100, alpha=0.7, label=f'Player {j + 1}')
+            
+            # Plot ball movement over next 96 ticks (or until the end of the data if fewer than 96 rows are left)
+            end_idx = min(index + 96, len(df_processed))
+            df_ball_movement = df_processed.loc[index:end_idx, ["ball_x", "ball_y"]]
+            
+            # Initial ball position (highlighted)
+            ax.scatter(df_ball_start["ball_x"], df_ball_start["ball_y"], s=120, color='blue', edgecolors='red', linewidth=2, label='Ball_start')
+            
+            # Plot ball trail to show movement
+            for j in range(1, len(df_ball_movement)):
+                x = df_ball_movement.iloc[j]["ball_x"]
+                y = df_ball_movement.iloc[j]["ball_y"]
+                if pd.notna(x) and pd.notna(y):
+                    ax.scatter(x, y, s=100, color='yellow', edgecolors='red', alpha=(j / len(df_ball_movement)), label='Ball' if j == 1 else "")
+
+            # Title and legend
+            ax.set_title(f"Half: {half}, Time [s]: {df_processed['Time [s]'].iloc[index]}")
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=4)
+            plt.show()
+    
+    # Update function on dropdown change
+    def on_dropdown_change(change):
+        if change['type'] == 'change' and change['name'] == 'value':
+            update_pitch(change['new'])
+
+    # Initial plot
+    update_pitch(dropdown.value)
+    dropdown.observe(on_dropdown_change)
+
+    # Display widgets
+    display(widgets.VBox([dropdown, output]))
