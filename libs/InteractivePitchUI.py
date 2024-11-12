@@ -22,6 +22,7 @@ class InteractivePitch:
         self.situations = []
         self.similar_situation_indices = []
         self.ball_position = None
+        self.vector_start = None
         
         # Mode flags
         self.draw_vector_mode = False
@@ -81,7 +82,7 @@ class InteractivePitch:
             #indices = most_similar_with_wasserstein_from_row(clicked_row, self.match_data, weighting_function)
             relevant_data = self.match_data
             if (self.ball_position):
-                relevant_data = filter_by_ball_radius(self.match_data,self.ball_position[0],self.ball_position[1],5)
+                relevant_data = filter_by_ball_radius(self.match_data,self.ball_position[0],self.ball_position[1],10)
 
 
             indices = most_similar_with_wasserstein(self.situation_dropdown.value, relevant_data, weighting_function)
