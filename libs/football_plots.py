@@ -362,45 +362,56 @@ def display_pitches_with_ball_movement(df_processed: pd.DataFrame, indices: list
     plt.tight_layout()
     plt.show()
 
-
-import matplotlib.pyplot as plt
-from mplsoccer import Pitch
-import pandas as pd
-import numpy as np
 import ipywidgets as widgets
 from IPython.display import display, clear_output
 
-def display_interactive_pitch(df_processed: pd.DataFrame, indices: list):
-    """
-    Display interactive pitch plots with a dropdown menu to select index and update the plot.
+class InteractivePitchDisplay:
+    def __init__(self, df_processed: pd.DataFrame, indices: list):
+        """
+        Initialize an interactive pitch display with a dropdown for index selection.
 
-    Parameters:
-    df_processed (pd.DataFrame): The processed DataFrame containing player and ball positions.
-    indices (list): List of indices in the DataFrame to plot.
-
-    Returns:
-    None
-    """
-    # Dropdown widget for index selection
-    dropdown = widgets.Dropdown(
-        options=indices,
-        description='Select Index:',
-        value=indices[0]
-    )
+        Parameters:
+        df_processed (pd.DataFrame): The processed DataFrame containing player and ball positions.
+        indices (list): List of indices in the DataFrame to plot.
+        """
+        self.df_processed = df_processed
+        self.indices = indices
+        self.selected_index = indices[0]  # Initialize with the first index
+        
+        # Dropdown widget for index selection
+        self.dropdown = widgets.Dropdown(
+            options=self.indices,
+            description='Select Index:',
+            value=self.selected_index
+        )
+        
+        # Output widget to display the pitch
+        self.output = widgets.Output()
+        
+        # Initialize display
+        self._initialize_display()
+        
+    def _initialize_display(self):
+        """Set up widgets and initial plot."""
+        # Initial plot
+        self.update_pitch(self.selected_index)
+        
+        # Observe dropdown changes
+        self.dropdown.observe(self._on_dropdown_change, names='value')
+        
+        # Display widgets
+        display(widgets.VBox([self.dropdown, self.output]))
     
-    # Output widget to display the pitch
-    output = widgets.Output()
-    
-    # Function to update pitch based on selected index
-    def update_pitch(index):
-        with output:
+    def update_pitch(self, index):
+        """Update the pitch plot based on the selected index."""
+        with self.output:
             clear_output(wait=True)
             fig, ax = plt.subplots(figsize=(8, 6))
 
             # Extract data for selected index
-            df_ball_start = df_processed.loc[index, ["ball_x", "ball_y"]]
-            half = str(df_processed.loc[index, 'half'])
-            df_current = df_processed.filter(regex='^home').loc[index]
+            df_ball_start = self.df_processed.loc[index, ["ball_x", "ball_y"]]
+            half = str(self.df_processed.loc[index, 'half'])
+            df_current = self.df_processed.filter(regex='^home').loc[index]
             
             # Set up the pitch
             pitch = Pitch(pitch_type='skillcorner', pitch_length=105, pitch_width=68, axis=True, label=True, line_color="white", pitch_color="grass")
@@ -416,8 +427,8 @@ def display_interactive_pitch(df_processed: pd.DataFrame, indices: list):
                     ax.scatter(x, y, color=player_colors[j], edgecolors='black', s=100, alpha=0.7, label=f'Player {j + 1}')
             
             # Plot ball movement over next 96 ticks (or until the end of the data if fewer than 96 rows are left)
-            end_idx = min(index + 96, len(df_processed))
-            df_ball_movement = df_processed.loc[index:end_idx, ["ball_x", "ball_y"]]
+            end_idx = min(index + 96, len(self.df_processed))
+            df_ball_movement = self.df_processed.loc[index:end_idx, ["ball_x", "ball_y"]]
             
             # Initial ball position (highlighted)
             ax.scatter(df_ball_start["ball_x"], df_ball_start["ball_y"], s=120, color='blue', edgecolors='red', linewidth=2, label='Ball_start')
@@ -430,18 +441,16 @@ def display_interactive_pitch(df_processed: pd.DataFrame, indices: list):
                     ax.scatter(x, y, s=100, color='yellow', edgecolors='red', alpha=(j / len(df_ball_movement)), label='Ball' if j == 1 else "")
 
             # Title and legend
-            ax.set_title(f"Half: {half}, Time [s]: {df_processed['Time [s]'].iloc[index]}")
+            ax.set_title(f"Half: {half}, Time [s]: {self.df_processed['Time [s]'].iloc[index]}")
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=4)
             plt.show()
-    
-    # Update function on dropdown change
-    def on_dropdown_change(change):
+
+    def _on_dropdown_change(self, change):
+        """Handle dropdown changes and update the selected index."""
         if change['type'] == 'change' and change['name'] == 'value':
-            update_pitch(change['new'])
-
-    # Initial plot
-    update_pitch(dropdown.value)
-    dropdown.observe(on_dropdown_change)
-
-    # Display widgets
-    display(widgets.VBox([dropdown, output]))
+            self.selected_index = change['new']
+            self.update_pitch(self.selected_index)
+    
+    def get_selected_index(self):
+        """Getter for the selected index."""
+        return self.selected_index
