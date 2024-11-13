@@ -338,7 +338,7 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
         extracted_data.append(match_data)
     
     # Concatenate all extracted match data
-    final_data = pd.concat(extracted_data, ignore_index=True)
+    final_data = pd.concat(extracted_data)
     
     # Drop the columns that are NaN but skip the first row   
     final_data = final_data.dropna(axis=1, how='all', subset=final_data.index[1:])
