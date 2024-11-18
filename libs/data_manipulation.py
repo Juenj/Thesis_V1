@@ -75,13 +75,14 @@ def compile_team_tracking_data(base_directory, team_name):
 
                     # Combine the DataFrames column-wise
                     combined_df = pd.concat([team_df, opp_df], axis=1)
-
+                    combined_df["match_name"] = np.full_like(combined_df["half"].to_numpy(),folder_name[8:])
 
 
              
                     # Append to the compiled DataFrame
                     compiled_df = pd.concat([compiled_df, combined_df], ignore_index=True, axis=0)
-
+                    
+    compiled_df.drop(columns=["ball_x_team","ball_y_team"], inplace= True)
     # Save the compiled data to a CSV
     output_csv_path = os.path.join(base_directory, f"{team_name}_compiled_tracking_data.csv")
     compiled_df.to_csv(output_csv_path, index=False)
@@ -102,52 +103,6 @@ def rename_columns(df, team):
     # Rename columns to match standard player number columns
     new_columns = {col: col.replace(f'{team}_', 'player_') for col in df.columns}
     df.rename(columns=new_columns, inplace=True)
-
-def compile_den_csvs(base_directory):
-    """
-    Compile all tracking data for Denmark across all matches into one large DataFrame.
-
-    Parameters:
-    base_directory (str): The directory containing all match folders.
-
-    Returns:
-    pd.DataFrame: The compiled DataFrame.
-    """
-
-    # Initialize an empty DataFrame to hold all data
-    compiled_df = pd.DataFrame()
-
-    # Loop through all directories in the base directory
-    for folder_name in os.listdir(base_directory):
-        # Check if the folder name contains "Denmark" or "DEN"
-        if 'Denmark' in folder_name or 'DEN' in folder_name:
-            folder_path = os.path.join(base_directory, folder_name)
-            
-            # Ensure it is a directory
-            if os.path.isdir(folder_path):
-                # Split the folder name by underscores
-                parts = folder_name.split('_')
-                
-                # Determine whether Denmark/DEN is the home or away team
-                if parts[-1] in ['Denmark', 'DEN']:
-                    # If Denmark/DEN is the last part, use tracking_away.csv
-                    csv_path = os.path.join(folder_path, 'tracking_away.csv')
-                    team = 'away'
-                else:
-                    # If Denmark/DEN is not the last part, use tracking_home.csv
-                    csv_path = os.path.join(folder_path, 'tracking_home.csv')
-                    team = 'home'
-                
-                # Check if the selected file exists
-                if os.path.exists(csv_path):
-                    # Read the CSV
-                    temp_df = pd.read_csv(csv_path)
-                    # Rename columns to standardize player number columns
-                    rename_columns(temp_df, team)
-                    # Append the DataFrame to the compiled DataFrame
-                    compiled_df = pd.concat([compiled_df, temp_df], ignore_index=True)
-
-    return compiled_df
 
 
 
@@ -348,4 +303,18 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     
     return final_data
 
+def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_path):
+    df = compile_team_tracking_data(base_directory, team_name)
 
+    labels_df = pd.read_csv(label_csv_path)
+    labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: float(int(x[:-4]) * 60 + int(x[-2:])))
+    df_joined = pd.merge(
+        df,
+        labels_df,
+        how="left",
+        left_on=["Time [s]_team", "match_name"],
+        right_on=["Time[s]", "match_name"]
+    )
+
+    df_joined["Label"] =df_joined["Label"].fillna("Missing")
+    return df_joined

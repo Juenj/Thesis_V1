@@ -371,8 +371,8 @@ class PitchDisplay:
                 if pd.notna(x) and pd.notna(y):
                     ax.scatter(x, y, color=player_colors[j], edgecolors='black', s=100, alpha=0.7, label=f'Player {j + 1}')
             
-            # Plot ball movement over next 96 ticks (or until the end of the data if fewer than 96 rows are left)
-            end_idx = min(index + 96, len(self.df_processed))
+            # Plot ball movement over next 120 ticks (or until the end of the data if fewer than 96 rows are left)
+            end_idx = min(index + 120, len(self.df_processed))
             df_ball_movement = self.df_processed.loc[index:end_idx, ["ball_x", "ball_y"]]
             
             # Initial ball position (highlighted)

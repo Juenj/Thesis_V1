@@ -25,12 +25,11 @@ def find_similar_movement(df, index_of_target_movement, indices_of_candidate_seq
 
     # Loop through each candidate sequence to compare with the target sequence.
     for index in indices_of_candidate_sequeces:
-        print(index)  # Print index for tracking the process
+        
         
         # Extract and normalize the current candidate sequence.
         considered_sequence = df[columns].loc[index:index+length_of_sequence:12].to_numpy()
         considered_sequence = considered_sequence - considered_sequence[0]  # Normalize by setting the first point as the origin.
-
         # Compute the distance between the target and candidate sequence using fast dynamic time warping (fastdtw).
         try:
             distance, path = fastdtw(target_sequence, considered_sequence, dist=euclidean)
