@@ -240,8 +240,9 @@ def append_features(data):
 def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     """
     Extracts data for the specified number of matches from the DataFrame.
-    Standardizes player positions by reflecting the positions in the second half.
-    
+    Standardizes player positions so that teams always attack from right to left,
+    regardless of their attacking direction in the first half.
+
     A new match is identified by a reset of Time [s] to zero.
 
     Parameters:
@@ -279,16 +280,27 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
         # Add match_id column
         match_data['match_id'] = match_id + 1  # Match ID starts at 1
         
-        # Reflect player positions in the second half
+        # Normalize positions to ensure teams attack from right to left
         if 'half' in match_data.columns:
-            # Determine if we are in the second half ('2H') and reflect the positions
-            second_half = match_data['half'] == '2H'
-            
-            # Define the columns to reflect (positions for both teams and ball positions)
             position_columns = [col for col in match_data.columns if ('_x' in col or '_y' in col)]
+            
+            # Determine attacking direction in the first half by calculating average x-coordinate of the ball
+            first_half = match_data['half'] == '1H'
+            second_half = match_data['half'] == '2H'
+            columns =df.filter(regex="^home").columns.to_numpy()
+            
+            avg_ball_x_first_half = np.nanmean(match_data.iloc[0:1][columns].to_numpy())
+            attacking_right_to_left = avg_ball_x_first_half > 0  # Attacking towards negative x
+            
+            # Reflect x-coordinates if attacking direction is left-to-right in the first half
+            if not attacking_right_to_left:
+                match_data.loc[first_half, [col for col in position_columns if '_x' in col]] *= -1
 
-            # Reflect positions for second half by multiplying x and y coordinates by -1
-            match_data.loc[second_half, position_columns] = match_data.loc[second_half, position_columns] * -1
+            else:
+                match_data.loc[second_half, [col for col in position_columns if '_x' in col]] *= -1
+
+            
+            # Reflect x and y for the second half
         
         extracted_data.append(match_data)
     
@@ -298,16 +310,17 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
     # Drop the columns that are NaN but skip the first row   
     final_data = final_data.dropna(axis=1, how='all', subset=final_data.index[1:])
     
-    # keep the Time [s] column
+    # Keep the Time [s] column and reorder other columns
     final_data = final_data[['match_id', 'Time [s]'] + [col for col in final_data.columns if col not in ['match_id', 'Time [s]']]]
     
     return final_data
+
 
 def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_path):
     df = compile_team_tracking_data(base_directory, team_name)
 
     labels_df = pd.read_csv(label_csv_path)
-    labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: float(int(x[:-4]) * 60 + int(x[-2:])))
+    labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: float(int(x[:-3]) * 60 + int(x[-2:])))
     df_joined = pd.merge(
         df,
         labels_df,

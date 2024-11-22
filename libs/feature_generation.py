@@ -165,52 +165,42 @@ def ripley_k_multiclass_by_indices(df, indices):
     k_vals = np.array([ripley_k_multiclass(df.filter(regex='^home').loc[i],df.filter(regex='^away').loc[i],np.arange(0, 34), 105.0, 68.0) for i in indices])
     return k_vals
 
+import numpy as np
+from scipy.spatial.distance import cdist
 
-def ripley_k(points: pd.Series, radii: np.linspace, width: float, height: float):
+def ripley_k(points: pd.Series, radii: np.ndarray, width: float, height: float):
     """
     Ripley's K function for a set of points in a 2D area.
 
     Parameters:
     points (pd.Series): The points for which to calculate Ripley's K values,
                         expected format: [x_1, y_1, x_2, y_2, ...].
-    radii (np.linspace): The radii for which to calculate Ripley's K values.
+    radii (np.ndarray): The radii for which to calculate Ripley's K values.
     width (float): The width of the area in which the points are located.
     height (float): The height of the area in which the points are located.
 
     Returns:
     list: The Ripley's K values for the points. 
     """
-    
     # Reshape points from flat Series to array of (x, y) pairs
     points = points.dropna()
-    n = len(points) // 2  # Since points come in pairs (x, y)
-    
+    n = len(points) // 2
     points_array = np.array(points).reshape(n, 2)
-  
-
+    
     area = width * height
-    lambda_density = n / area
+    lambda_density = n / area  # Intensity of the process
     k_values = []
 
-    # Loop through each radius value
+    # Compute pairwise distances
+    distances = cdist(points_array, points_array)
     for r in radii:
-        count = 0
-        
-        # Loop through each point and calculate the pairwise distances
-        for i in range(n):
-            for j in range(n):
-                if i != j:
-                    # Calculate Euclidean distance between point i and point j
-                    distance = np.linalg.norm(points_array[i] - points_array[j])
-                    if distance < r:
-                        count += 1
-
-
-        # Calculate Ripley's K for the given radius
-        k_r = count / (n * lambda_density)
+        # Count pairs within distance r (ignoring self-pairs)
+        count = np.sum((distances < r) & (distances > 0)) /2  # Avoid zero distances
+        k_r = count / (n * lambda_density)  # Adjust by intensity
         k_values.append(k_r)
 
     return k_values
+
 
 
 
