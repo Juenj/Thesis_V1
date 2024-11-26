@@ -1,10 +1,5 @@
 import numpy as np
 import pandas as pd
-
-
-
-
-
 def calculate_msd_for_team(df : pd.DataFrame):
     df = df.filter(regex = "^home")
     n_rows = len(df.index)
@@ -17,6 +12,11 @@ def calculate_msd_for_team(df : pd.DataFrame):
                 msds[i] += (point_initial[0] - data_np[i,j])**2 + (point_initial[1] - data_np[i,j+1])**2
     return msds/11
             
+
+
+
+
+
 
 
 def team_msd_for_dataframe(df, indices, max_time_lag):

@@ -91,8 +91,8 @@ def filter_by_ball_radius(data, index, radius):
 def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_function, steps = 48, normalizing_factor = 11, max_weight = 1):
     one_match = relevant_df
     identified_corner_df= relevant_df.loc[relevant_index:relevant_index+1]
-    print(identified_corner_df)
     one_match = one_match.iloc[::steps]
+
     #####
     inverse_identified_corner_weights = calculate_weights(identified_corner_df,normalizing_factor, fun = weighting_function, max_val=max_weight)
     inverse_distance_list = calculate_weights(one_match,normalizing_factor, fun= weighting_function, max_val=max_weight) #Inverse proportionality to distance
@@ -121,15 +121,16 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     #Get closest situations
     distances = []
     indices = one_match.index.to_numpy()
-    print(len(indices))
-    print(len(inverse_distance_list))
+    #print(len(indices))
+    #print(len(inverse_distance_list))
 
     i = 0
     for weights, coordinates in zip(inverse_distance_list, coordinates_zipped):
         #print(len(inverse_identified_corner_weights[0]))
         #print(len(weights))
-        print(identified_corner_coordinates)
-        #print(len(coordinates))
+        #print(identified_corner_coordinates)
+        #print(coordinates)
+        ##print(len(coordinates))
         if(not np.isnan(np.sum(weights)) and (len(weights) == len(inverse_identified_corner_weights[0])) and (len(coordinates) == len(identified_corner_coordinates[0]) )):
             
             print(i)
@@ -137,6 +138,9 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
         i+=1
     indices_and_distances = sorted(distances, key = lambda t: t[0])
     indices = [index for _,index in indices_and_distances]
+    if (len(indices) == 0):
+        raise ValueError("No reccomendations")
+
     return indices
 
 

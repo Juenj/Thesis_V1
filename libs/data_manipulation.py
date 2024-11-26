@@ -319,15 +319,20 @@ def extract_one_match(df: pd.DataFrame, num_matches=1, tick_distance=1):
 def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_path):
     df = compile_team_tracking_data(base_directory, team_name)
 
+    # Load and preprocess labels DataFrame
     labels_df = pd.read_csv(label_csv_path)
     labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: float(int(x[:-3]) * 60 + int(x[-2:])))
-    df_joined = pd.merge(
-        df,
-        labels_df,
-        how="left",
-        left_on=["Time [s]_team", "match_name"],
-        right_on=["Time[s]", "match_name"]
+    # Adjust times to the nearest multiple of 1/25th of a second
+    labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: round(x / 0.04) * 0.04)
+
+    # Merge based on rounded time and other keys
+    merged_df = pd.merge(
+        df, 
+        labels_df, 
+        left_on=["Time [s]_team", "match_name"], 
+        right_on=["Time[s]", "match_name"], 
+        how="left"
     )
 
-    df_joined["Label"] =df_joined["Label"].fillna("Missing")
-    return df_joined
+    merged_df["Label"] = merged_df["Label"].fillna("Missing")
+    return merged_df

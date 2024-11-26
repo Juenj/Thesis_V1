@@ -36,10 +36,12 @@ def find_similar_movement(df, index_of_target_movement, indices_of_candidate_seq
         except:
             # Skip this candidate if an error occurs (e.g., due to sequence length mismatch).
             continue
-
+        
+       
         # Append the distance and the candidate index to the distances list.
         distances.append((distance, index))
-
+    if(len(distances) == 0):
+            raise("NO SIMILAR SITUATIONS???")
     return distances
 
 
