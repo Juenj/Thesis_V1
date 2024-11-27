@@ -39,8 +39,7 @@ def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='bal
             distance_to_ball = np.sqrt((player_x - ball_x[frame_idx])**2 + (player_y - ball_y[frame_idx])**2)
           
             weight = fun(distance_to_ball)  # Add epsilon to ensure positivity
-            if (weight > 190):
-                print(weight)
+            
             weights.append(np.min([weight, max_val])/normalizing_factor)
         weights.append(1-np.sum(weights)) #Adding final weight for ball
         weights_list.append(weights)
@@ -133,7 +132,7 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
         ##print(len(coordinates))
         if(not np.isnan(np.sum(weights)) and (len(weights) == len(inverse_identified_corner_weights[0])) and (len(coordinates) == len(identified_corner_coordinates[0]) )):
             
-            print(i)
+            #print(i)
             distances.append((wasserstein_distance_nd(identified_corner_coordinates[0], coordinates, u_weights= inverse_identified_corner_weights[0], v_weights=weights), indices[i]))
         i+=1
     indices_and_distances = sorted(distances, key = lambda t: t[0])

@@ -8,7 +8,7 @@ class VideoPlayer:
     def __init__(self, video_path, video_offset=0, distance_index_list=None):
         self.video_path = video_path
         self.video_offset = video_offset
-        self.distance_index_list = distance_index_list or []
+        self.distance_index_list = distance_index_list
         self.current_index = 0
 
         # Create a VLC instance and media player
@@ -28,31 +28,41 @@ class VideoPlayer:
         self.player.play()
         time.sleep(2)
         self.player.pause()
+        self.start(0)
 
     def setup_ui(self):
+        # Set minimum window size
+        self.root.geometry("400x200")
+
         # Pause Button
+        print("Creating Pause Button")
         pause_button = Button(self.root, text="Pause", command=self.pause_video)
-        pause_button.pack(side=tk.LEFT)
+        pause_button.pack()
 
         # Play Button
+        print("Creating Play Button")
         play_button = Button(self.root, text="Play", command=self.play_video)
-        play_button.pack(side=tk.LEFT)
+        play_button.pack()
 
         # Next Button
+        print("Creating Next Button")
         next_button = Button(self.root, text="Next", command=self.next_time)
-        next_button.pack(side=tk.LEFT)
+        next_button.pack()
 
         # Previous Button
+        print("Creating Previous Button")
         previous_button = Button(self.root, text="Previous", command=self.previous_time)
-        previous_button.pack(side=tk.LEFT)
+        previous_button.pack()
 
         # Close Button
+        print("Creating Close Button")
         close_button = Button(self.root, text="Close", command=self.close_video)
-        close_button.pack(side=tk.LEFT)
+        close_button.pack()
 
         # Time Label
+        print("Creating Time Label")
         self.time_label = Label(self.root, text="Time: 0 seconds")
-        self.time_label.pack(side=tk.LEFT)
+        self.time_label.pack()
 
     def seek_to_time(self, seconds):
         """Seek to a specific time in the video."""

@@ -329,8 +329,8 @@ def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_
     merged_df = pd.merge(
         df, 
         labels_df, 
-        left_on=["Time [s]_team", "match_name"], 
-        right_on=["Time[s]", "match_name"], 
+        left_on=["Time [s]_team", "match_name", "half"], 
+        right_on=["Time[s]", "match_name", "half"], 
         how="left"
     )
 
