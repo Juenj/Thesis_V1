@@ -324,7 +324,7 @@ def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_
     labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: float(int(x[:-3]) * 60 + int(x[-2:])))
     # Adjust times to the nearest multiple of 1/25th of a second
     labels_df["Time[s]"] = labels_df["Time[s]"].apply(lambda x: round(x / 0.04) * 0.04)
-
+    print(df.columns)
     # Merge based on rounded time and other keys
     merged_df = pd.merge(
         df, 
@@ -333,6 +333,6 @@ def compile_team_tracking_data_with_labels(base_directory, team_name, label_csv_
         right_on=["Time[s]", "match_name", "half"], 
         how="left"
     )
-
+    
     merged_df["Label"] = merged_df["Label"].fillna("Missing")
     return merged_df

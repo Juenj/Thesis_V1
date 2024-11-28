@@ -29,7 +29,6 @@ class VideoPlayer:
         time.sleep(2)
         self.player.pause()
         self.start(0)
-
     def setup_ui(self):
         # Set minimum window size
         self.root.geometry("400x200")
@@ -92,7 +91,7 @@ class VideoPlayer:
 
     def next_time(self):
         """Skip to the next closest situation time."""
-        if self.distance_index_list:
+        if self.distance_index_list.any():
             self.current_index = (self.current_index + 1) % len(self.distance_index_list)
             specific_time_in_seconds = self.distance_index_list[self.current_index][0]
             self.seek_to_time(specific_time_in_seconds)
