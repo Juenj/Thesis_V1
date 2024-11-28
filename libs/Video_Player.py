@@ -5,9 +5,15 @@ from tkinter import Button, Label
 import numpy as np
 
 class VideoPlayer:
-    def __init__(self, video_path, video_offset=0, distance_index_list=None):
+
+
+
+    def __init__(self, video_path, video_offset_1st_half=0,video_offset_2nd_half = 0, distance_index_list=None):
+
+        self.ratings = []
         self.video_path = video_path
-        self.video_offset = video_offset
+        self.video_offset_1st_half = video_offset_1st_half
+        self.video_offset_2nd_half = video_offset_2nd_half
         self.distance_index_list = distance_index_list
         self.current_index = 0
 
@@ -63,10 +69,23 @@ class VideoPlayer:
         self.time_label = Label(self.root, text="Time: 0 seconds")
         self.time_label.pack()
 
-    def seek_to_time(self, seconds):
+        #Negative Rating
+        print("Creating Negative Rating Button")
+        close_button = Button(self.root, text="Negative", command=self.rate_sitauton_negative)
+        close_button.pack()
+
+        #Positive Rating
+        print("Creating Positiv Rating Button")
+        close_button = Button(self.root, text="Positive", command=self.rate_sitauton_positive)
+        close_button.pack()
+
+    def seek_to_time(self, seconds, half):
         """Seek to a specific time in the video."""
-        if isinstance(seconds, (int, float)):
-            self.player.set_time(int((seconds + self.video_offset) * 1000))
+        if (isinstance(seconds, (int, float)) and ( half == "1H")):
+            self.player.set_time(int((seconds + self.video_offset_1st_half) * 1000))
+
+        if (isinstance(seconds, (int, float)) and (half == "2H")):
+            self.player.set_time(int((seconds + self.video_offset_2nd_half) * 1000))
 
     def pause_video(self):
         """Pause the video."""
@@ -94,21 +113,29 @@ class VideoPlayer:
         if self.distance_index_list.any():
             self.current_index = (self.current_index + 1) % len(self.distance_index_list)
             specific_time_in_seconds = self.distance_index_list[self.current_index][0]
-            self.seek_to_time(specific_time_in_seconds)
+            specific_half = self.distance_index_list[self.current_index][1]
+            self.seek_to_time(specific_time_in_seconds, specific_half)
             self.time_label.config(text=f"Time: {specific_time_in_seconds} seconds")
 
     def previous_time(self):
         """Skip to the previous closest situation time."""
-        if self.distance_index_list:
+        if self.distance_index_list.any():
             self.current_index = (self.current_index - 1) % len(self.distance_index_list)
             specific_time_in_seconds = self.distance_index_list[self.current_index][0]
-            self.seek_to_time(specific_time_in_seconds)
+            specific_half = self.distance_index_list[self.current_index][1]
+            self.seek_to_time(specific_time_in_seconds, specific_half)
             self.time_label.config(text=f"Time: {specific_time_in_seconds} seconds")
 
     def start(self, initial_time):
         """Set the initial time and start the Tkinter main loop."""
         print(f"Initial Time: {initial_time} seconds")
-        self.seek_to_time(initial_time)
+        self.seek_to_time(initial_time, "1H")
         self.update_time_label()
         self.root.mainloop()
+
+    def rate_sitauton_negative(self):
+        self.ratings.append([self.distance_index_list[self.current_index][2], 0])
+
+    def rate_sitauton_positive(self):
+        self.ratings.append([self.distance_index_list[self.current_index][2], 1])
 

@@ -91,7 +91,7 @@ def find_similar_movement_given_vector(df, vector, indices_of_candidate_sequeces
 
 
 
-def find_similar_movement_entire_team(df, index_of_target_movement, indices_of_candidate_sequeces, length_of_sequence=120, ball_columns=["ball_x", "ball_y"], player_column_regex = "^home", ball_weight = 0.5):
+def find_similar_movement_entire_team(df, index_of_target_movement, indices_of_candidate_sequeces, length_of_sequence=240, ball_columns=["ball_x", "ball_y"], player_column_regex = "^home", ball_weight = 0.5):
 
     distances = []  # Initialize list to store distances between the target sequence and each candidate.
     
