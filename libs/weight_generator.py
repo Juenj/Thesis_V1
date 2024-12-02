@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 
-def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home", fun=lambda x: x, max_val =1):
+def calculate_weights(df: pd.DataFrame, fun, ball_x_col='ball_x', ball_y_col='ball_y', regex="^home"):
     ball_x = df[ball_x_col].values
     ball_y = df[ball_y_col].values
     player_cols = df.filter(regex=regex).columns
@@ -26,6 +26,7 @@ def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='bal
     indices = df.index.to_numpy()
     for frame_idx in range(len(df)):
         weights = []
+        sum=0
         for i in range(len(x_cols)):  # Loop through all players
             player_x = df.loc[indices[frame_idx], x_cols[i]]
             player_y = df.loc[indices[frame_idx], y_cols[i]]
@@ -38,13 +39,15 @@ def calculate_weights(df: pd.DataFrame, normalizing_factor = 11, ball_x_col='bal
             # Calculate the distance to the ball and ensure a small epsilon is added
             distance_to_ball = np.sqrt((player_x - ball_x[frame_idx])**2 + (player_y - ball_y[frame_idx])**2)
           
-            weight = fun(distance_to_ball)  # Add epsilon to ensure positivity
-            
-            weights.append(np.min([weight, max_val])/normalizing_factor)
-        weights.append(1-np.sum(weights)) #Adding final weight for ball
+            weight = fun(distance_to_ball) 
+            sum+=weight
+            weights.append(weight)
+
+        weights.append(fun(0, sum)) #Adding final weight for ball
+        
         weights_list.append(weights)
 
-  
+    print(np.sum(weights_list[0]),np.sum(weights_list[50]))
     return weights_list  # Return a list of arrays with normalized weights
 
 
@@ -204,3 +207,27 @@ def filter_by_ball_radius(data, ball_x, ball_y, radius):
     filtered_data = data[distances <= radius]
     
     return filtered_data
+
+
+
+
+def inverse_weighting(x, sum=0,scaling_factor = 20, n_points = 12, ball_weighting = 0.1):
+    if (x > 1):
+        return scaling_factor/(x*n_points)
+    elif ( x > 0 and x <= 1):
+        return scaling_factor/n_points
+    else:
+        return (scaling_factor - sum) + ball_weighting
+
+
+def linear_weighting(x, sum=0, y_intercept = 200, n_points=12,ball_weighting = 0.1):
+    if (x > 0):
+        return (y_intercept-x)/(n_points)
+    else:
+        return (y_intercept - sum) + ball_weighting
+
+def inverse_exponential_weighting(x, sum=0, scaling_factor=20, n_points=12, ball_weighting = 0.1):
+    if (x>0):
+        return np.exp(-x/scaling_factor)/n_points
+    else:
+        return (1 - sum) + ball_weighting
