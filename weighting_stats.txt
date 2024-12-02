@@ -1,0 +1,5 @@
+                  Method  Average nDCG Score
+0      Inverse Weighting            0.915745
+1       Linear Weighting            0.911942
+2                Control            0.931473
+3  Exponential Weighting            0.915745
