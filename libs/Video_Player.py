@@ -78,7 +78,7 @@ class VideoPlayer:
         if isinstance(seconds, (int, float)) and half == "1H":
             self.player.set_time(int((seconds + self.video_offset_1st_half) * 1000))
         if isinstance(seconds, (int, float)) and half == "2H":
-            self.player.set_time(int((seconds + self.video_offset_2nd_half) * 1000))
+            self.player.set_time(int(((seconds-2700) + self.video_offset_2nd_half) * 1000))
 
     def pause_video(self):
         self.player.pause()

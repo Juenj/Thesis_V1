@@ -46,8 +46,7 @@ def calculate_weights(df: pd.DataFrame, fun, ball_x_col='ball_x', ball_y_col='ba
         weights.append(fun(0, sum)) #Adding final weight for ball
         
         weights_list.append(weights)
-
-    print(np.sum(weights_list[0]),np.sum(weights_list[50]))
+    print(len(weights_list))
     return weights_list  # Return a list of arrays with normalized weights
 
 
@@ -231,3 +230,64 @@ def inverse_exponential_weighting(x, sum=0, scaling_factor=20, n_points=12, ball
         return np.exp(-x/scaling_factor)/n_points
     else:
         return (1 - sum) + ball_weighting
+
+
+
+
+def most_similar_with_wasserstein_closed_interval(relevant_index, relevant_df, weighting_function, steps = 12, normalizing_factor = 11, max_weight = 1,interval_steps=10):
+    one_match = relevant_df
+    identified_corner_start_df = relevant_df.loc[relevant_index:relevant_index+1]
+    identified_corner_stop_df = relevant_df.loc[relevant_index+(steps*interval_steps):relevant_index+(steps*interval_steps)+1]
+    one_match = one_match.iloc[::steps]
+
+    #####
+    identified_situation_weights_start = calculate_weights(identified_corner_start_df, weighting_function)
+    identified_situation_weights_stop = calculate_weights(identified_corner_stop_df,weighting_function)
+
+
+
+
+
+    inverse_distance_list = calculate_weights(one_match,weighting_function) #Inverse proportionality to distance
+    #one_match = normalize_positions_with_ball(one_match)
+
+    # Filter the columns, then reorder so 'ball_x_team' and 'ball_y_team' are last
+    columns_to_select = one_match.filter(regex="^home|ball_x|ball_y").columns
+    # Separate ball_x_team and ball_y_team columns and place them at the end
+    reordered_columns = [col for col in columns_to_select if not col.startswith("ball")] + \
+                        [col for col in columns_to_select if col.startswith("ball")]
+    
+    
+    # Apply the reordered columns to the DataFrame, then convert to numpy
+    coordinates_numpy = one_match[reordered_columns].to_numpy()
+
+    
+    identified_situation_coordinates_start_numpy = identified_corner_start_df[reordered_columns].to_numpy()
+    identified_situation_coordinates_stop_numpy = identified_corner_stop_df[reordered_columns].to_numpy()
+
+    identified_situation_coordinates_start = [list(zip(row[~np.isnan(row)][::2],row[~np.isnan(row)][1::2])) for row in identified_situation_coordinates_start_numpy]
+    identified_situation_coordinates_stop = [list(zip(row[~np.isnan(row)][::2],row[~np.isnan(row)][1::2])) for row in identified_situation_coordinates_stop_numpy]
+
+    coordinates_zipped = [list(zip(row[~np.isnan(row)][::2],row[~np.isnan(row)][1::2])) for row in coordinates_numpy]
+    distances = []
+    indices = one_match.index.to_numpy()
+
+
+    i = 0
+    for weights, coordinates, weights_next, coordinates_next  in zip(inverse_distance_list, coordinates_zipped, inverse_distance_list[interval_steps:],coordinates_zipped[interval_steps:]):
+        if(not np.isnan(np.sum(weights)) and (len(weights) == len(identified_situation_weights_start[0])) and (len(coordinates) == len(identified_situation_coordinates_start[0]) ) and (len(coordinates_next) == len(coordinates))):
+            
+
+            start_distance = wasserstein_distance_nd(identified_situation_coordinates_start[0], coordinates, u_weights= identified_situation_weights_start[0], v_weights=weights)
+            stop_distance = wasserstein_distance_nd(identified_situation_coordinates_stop[0], coordinates_next, u_weights= identified_situation_weights_stop[0], v_weights=weights_next)
+            distances.append((np.average([start_distance,stop_distance]), indices[i]))
+
+
+        i+=1
+    indices_and_distances = sorted(distances, key = lambda t: t[0])
+    indices = [index for _,index in indices_and_distances]
+    if (len(indices) == 0):
+        raise ValueError("No reccomendations")
+    print(len(indices))
+
+    return indices
