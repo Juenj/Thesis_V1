@@ -64,14 +64,15 @@ class InteractivePitch:
             print(f"Situation saved! Total saved situations: {len(self.situations)}")
     
     def calculate_wasserstein(self, _):
+
         if self.situations and self.ball_position:
             # Retrieve selected function from the dropdown
             selected_function = self.function_dropdown.value
             weighting_function = {
                 "control": lambda x: 1,
-                "function_1": lambda x: 200 - x,
-                "function_2": lambda x: 1 / x,
-                "function_3": lambda x: np.exp(-x / 40)
+                "function_1": linear_weighting,
+                "function_2": inverse_weighting,
+                "function_3": inverse_exponential_weighting
             }[selected_function]
             
             # Prepare clicked row from the picked saved situation
@@ -83,9 +84,9 @@ class InteractivePitch:
             relevant_data = self.match_data
             if (self.ball_position):
                 relevant_data = filter_by_ball_radius(self.match_data,self.ball_position[0],self.ball_position[1],10)
+            print(relevant_data)
 
-
-            indices = most_similar_with_wasserstein(self.situation_dropdown.value, relevant_data, weighting_function)
+            indices = most_similar_with_wasserstein_from_row(clicked_row, relevant_data, weighting_function)
             print("Wasserstein calculated, closest situations:", indices[:10])  # Display the top 10 closest situations
             self.similar_situation_indices = indices
             

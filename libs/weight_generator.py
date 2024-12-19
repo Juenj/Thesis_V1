@@ -93,10 +93,10 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     one_match = relevant_df
     identified_corner_df= relevant_df.loc[relevant_index:relevant_index+1]
     one_match = one_match.iloc[::steps]
-
+    print(weighting_function)
     #####
-    inverse_identified_corner_weights = calculate_weights(identified_corner_df,normalizing_factor, fun = weighting_function, max_val=max_weight)
-    inverse_distance_list = calculate_weights(one_match,normalizing_factor, fun= weighting_function, max_val=max_weight) #Inverse proportionality to distance
+    inverse_identified_corner_weights = calculate_weights(identified_corner_df,fun = weighting_function)
+    inverse_distance_list = calculate_weights(one_match, fun= weighting_function) #Inverse proportionality to distance
     #one_match = normalize_positions_with_ball(one_match)
 
     # Filter the columns, then reorder so 'ball_x_team' and 'ball_y_team' are last
@@ -145,7 +145,7 @@ def most_similar_with_wasserstein(relevant_index, relevant_df, weighting_functio
     return indices
 
 
-def most_similar_with_wasserstein_from_row(clicked_row, relevant_df, weighting_function, steps=48, normalizing_factor=11, max_weight=1):
+def most_similar_with_wasserstein_from_row(clicked_row : dict, relevant_df, weighting_function, steps=48, normalizing_factor=11, max_weight=1):
     """
     Find the most similar situations to a given clicked row using Wasserstein distance.
     
@@ -161,29 +161,37 @@ def most_similar_with_wasserstein_from_row(clicked_row, relevant_df, weighting_f
     - indices: List of indices in `relevant_df` sorted by similarity to the clicked situation.
     """
     one_match = relevant_df.iloc[::steps]  # Downsample relevant_df
-    clicked_df = pd.DataFrame([clicked_row], columns=relevant_df.columns)  # Convert clicked row to DataFrame
-
+    clicked_df = pd.DataFrame([clicked_row], clicked_row.keys())  # Convert clicked row to DataFrame
+    print(clicked_df.head())
     # Calculate weights for clicked situation and for each row in one_match
-    clicked_weights = calculate_weights(clicked_df, normalizing_factor, fun=weighting_function, max_val=max_weight)
-    one_match_weights = calculate_weights(one_match, normalizing_factor, fun=weighting_function, max_val=max_weight)
+    clicked_weights = calculate_weights(clicked_df, weighting_function,"ball_x_team","ball_y_team")
+    one_match_weights = calculate_weights(one_match, weighting_function)
 
     # Prepare and reorder columns for comparison
-    columns_to_select = one_match.filter(regex="^home|ball_x_team|ball_y_team").columns
+    columns_to_select = one_match.filter(regex="^home|^ball_x|^ball_y").columns
     reordered_columns = [col for col in columns_to_select if not col.startswith("ball")] + \
                         [col for col in columns_to_select if col.startswith("ball")]
     
+    clicked_columns = [col for col in clicked_df.columns if not col.startswith("ball")] + \
+                        [col for col in clicked_df.columns if col.startswith("ball")]
+
+    
     coordinates_numpy = one_match[reordered_columns].to_numpy()
-    clicked_coordinates_numpy = clicked_df[reordered_columns].to_numpy()
+    clicked_coordinates_numpy = clicked_df[clicked_columns].to_numpy()
+
 
     # Convert coordinates to zipped format
     clicked_coordinates = [list(zip(row[~np.isnan(row)][::2], row[~np.isnan(row)][1::2])) for row in clicked_coordinates_numpy]
     coordinates_zipped = [list(zip(row[~np.isnan(row)][::2], row[~np.isnan(row)][1::2])) for row in coordinates_numpy]
 
+
+    
     # Calculate Wasserstein distances between clicked situation and each row in one_match
     distances = []
     indices = one_match.index.to_numpy()
     i = 0
     for weights, coordinates in zip(one_match_weights, coordinates_zipped):
+        print(len(coordinates),len(clicked_coordinates[0]))
         if not np.isnan(np.sum(weights)) and (len(weights) == len(clicked_weights[0])) and (len(coordinates) == len(clicked_coordinates[0])):
             distance = wasserstein_distance_nd(clicked_coordinates[0], coordinates, u_weights=clicked_weights[0], v_weights=weights)
             distances.append((distance, indices[i]))
@@ -200,7 +208,7 @@ def filter_by_ball_radius(data, ball_x, ball_y, radius):
     ref_ball_x = ball_x
     ref_ball_y = ball_y    
     # Calculate the distance of each row's ball position from the reference position
-    distances = np.sqrt((data['ball_x_team'] - ref_ball_x)**2 + (data['ball_y_team'] - ref_ball_y)**2)
+    distances = np.sqrt((data['ball_x'] - ref_ball_x)**2 + (data['ball_y'] - ref_ball_y)**2)
     
     # Filter rows where the distance is less than or equal to the radius
     filtered_data = data[distances <= radius]

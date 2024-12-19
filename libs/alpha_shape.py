@@ -27,7 +27,7 @@ def alpha_shape(df: pd.DataFrame, regex: str = "^home", num_players: int = None,
     df = df.filter(regex=regex)
     np_data = df.to_numpy()  # Convert the DataFrame to a NumPy array
     points = []
-
+    print(len(np_data))
     # Process each frame of data to extract player positions
     for row in np_data:
         row = row[~np.isnan(row)]  # Remove NaN values (incomplete player positions)
@@ -50,6 +50,7 @@ def alpha_shape(df: pd.DataFrame, regex: str = "^home", num_players: int = None,
             alpha_shape_polygon = alphashape.alphashape(data, alpha)
             alpha_shapes.append(alpha_shape_polygon)
 
+    print(points)
     return alpha_shapes, df.index.to_numpy()
 
 

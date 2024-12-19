@@ -245,18 +245,18 @@ def generate_pitch_with_vectors(df_processed: pd.DataFrame, filename :str, ):
     player_colors = plt.cm.viridis(np.linspace(0, 1, int((np_data.shape[1]) / 2)))  # Color map for players
     
     # Add markers for legend (not shown on pitch)
-    for color_idx in range(len(player_colors)):
-        ax.plot([], [], 'o', color=player_colors[color_idx], label=f'Player {color_idx + 1}')
+    #for color_idx in range(len(player_colors)):
+    #    ax.plot([], [], 'o', color=player_colors[color_idx], label=f'Player {color_idx + 1}')
 
     for i in range(np_data.shape[0]-1):
         for j in range(0, np_data.shape[1] - 1, 2):
             x = np_data[i, j]
             y = np_data[i, j + 1]
             if pd.notna(x) and pd.notna(y):
-                ax.scatter(x, y, color=player_colors[j // 2], edgecolors='black', s=100, alpha=(i+1)/(np_data.shape[0]-1))
+                ax.scatter(x, y, color = "red", alpha=(i+1)/(np_data.shape[0]-1)) #,color=player_colors[j // 2], edgecolors='black', s=100, alpha=(i+1)/(np_data.shape[0]-1))
 
     # Plot the ball
-    ax.scatter(df_ball["ball_x"].iloc[1:], df_ball["ball_y"].iloc[1:], s=120, color='yellow', edgecolors='red', linewidth=2, label='Ball')
+    #ax.scatter(df_ball["ball_x"].iloc[1:], df_ball["ball_y"].iloc[1:], s=120, color='yellow', edgecolors='red', linewidth=2, label='Ball')
     ax.scatter(df_ball["ball_x"].iloc[0], df_ball["ball_y"].iloc[0], s=120, color='blue', edgecolors='red', linewidth=2, label='Ball_start')
     
     # Quiver for ball movement
@@ -268,7 +268,11 @@ def generate_pitch_with_vectors(df_processed: pd.DataFrame, filename :str, ):
         y_1 = np_data[i+1, 1]
         ax.quiver(x, y, (x_1-x), (y_1-y), angles='xy', scale_units='xy', alpha=0.3, width=0.005)
 
+
+    
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=4)
+    plt.xlabel("Meters",fontsize = 14)
+    plt.ylabel("Meters",fontsize=14)
     plt.title("Half :" + half + " ,Time [s]: " + str(df_processed["Time [s]"].to_numpy()[0]))
     plt.savefig(filename)
     plt.close()
